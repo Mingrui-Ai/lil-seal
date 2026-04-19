@@ -1,0 +1,89 @@
+.demo-page {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.9), transparent 38%),
+    radial-gradient(circle at 20% 20%, rgba(149, 209, 255, 0.4), transparent 28%),
+    linear-gradient(180deg, #f4fbff 0%, #d9f0ff 48%, #eff8ff 100%);
+  color: #1d3f53;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.demo-page *,
+.demo-page *::before,
+.demo-page *::after {
+  box-sizing: border-box;
+}
+
+.demo-page::before {
+  content: "";
+  position: fixed;
+  inset: auto 0 0;
+  height: 24vh;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.35), transparent 22%),
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.25), transparent 18%),
+    linear-gradient(180deg, rgba(110, 189, 231, 0.18), rgba(94, 160, 220, 0.28));
+  pointer-events: none;
+}
+
+.demo-main {
+  min-height: 100vh;
+  padding: clamp(28px, 5vw, 56px);
+  display: grid;
+  align-content: start;
+}
+
+.demo-card {
+  width: min(100%, 640px);
+  padding: clamp(24px, 4vw, 40px);
+  border: 1px solid rgba(73, 122, 145, 0.12);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 60px rgba(32, 83, 111, 0.15);
+}
+
+.demo-card__eyebrow {
+  margin: 0 0 12px;
+  color: #0d8dbb;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.demo-card h1 {
+  margin: 0;
+  font-family: "Noto Serif SC", "Source Han Serif SC", serif;
+  font-size: clamp(2rem, 4.6vw, 3.7rem);
+  line-height: 1.1;
+}
+
+.demo-card__lead,
+.demo-card__tip {
+  margin: 16px 0 0;
+  max-width: 46ch;
+  line-height: 1.7;
+  color: #55778a;
+}
+
+.demo-card__tip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(13, 141, 187, 0.08);
+  color: #0d8dbb;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .demo-main {
+    padding-bottom: 220px;
+  }
+
+  .demo-card {
+    width: 100%;
+  }
+}
