@@ -10,7 +10,8 @@
     "tailBoost": false,
     "specialEyes": null,
     "cheeks": false,
-    "effect": null
+    "effect": null,
+    "poseFrame": null
   },
   "sleepPose": {
     "mainState": "sleep",
@@ -22,6 +23,7 @@
     "tailBoost": false,
     "specialEyes": null,
     "cheeks": false,
-    "effect": null
+    "effect": null,
+    "poseFrame": null
   }
 }

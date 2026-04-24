@@ -31,14 +31,16 @@
   min-height: 100vh;
   padding: clamp(28px, 5vw, 56px);
   display: grid;
+  gap: 18px;
   align-content: start;
 }
 
-.demo-card {
+.demo-panel,
+.demo-controls {
   width: min(100%, 640px);
   padding: clamp(24px, 4vw, 40px);
   border: 1px solid rgba(73, 122, 145, 0.12);
-  border-radius: 28px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(18px);
   box-shadow: 0 24px 60px rgba(32, 83, 111, 0.15);
@@ -53,28 +55,78 @@
   text-transform: uppercase;
 }
 
-.demo-card h1 {
+.demo-panel h1,
+.demo-controls h2 {
   margin: 0;
   font-family: "Noto Serif SC", "Source Han Serif SC", serif;
   font-size: clamp(2rem, 4.6vw, 3.7rem);
   line-height: 1.1;
 }
 
+.demo-controls {
+  padding: clamp(20px, 3vw, 28px);
+}
+
+.demo-controls h2 {
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+}
+
+.demo-controls__header {
+  margin-bottom: 18px;
+}
+
 .demo-card__lead,
-.demo-card__tip {
+.demo-status {
   margin: 16px 0 0;
   max-width: 46ch;
   line-height: 1.7;
   color: #55778a;
 }
 
-.demo-card__tip {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(13, 141, 187, 0.08);
+.demo-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+}
+
+.demo-action {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(13, 141, 187, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
   color: #0d8dbb;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.demo-action:hover:not(:disabled),
+.demo-action:focus-visible {
+  border-color: rgba(13, 141, 187, 0.42);
+  background: rgba(13, 141, 187, 0.1);
+  color: #096f96;
+  transform: translateY(-1px);
+}
+
+.demo-action:focus-visible {
+  outline: 3px solid rgba(13, 141, 187, 0.26);
+  outline-offset: 2px;
+}
+
+.demo-action:disabled {
+  cursor: wait;
+  opacity: 0.48;
+}
+
+.demo-status {
+  min-height: 1.7em;
+  font-size: 0.92rem;
   font-weight: 600;
 }
 
@@ -83,7 +135,8 @@
     padding-bottom: 220px;
   }
 
-  .demo-card {
+  .demo-panel,
+  .demo-controls {
     width: 100%;
   }
 }

@@ -38,6 +38,7 @@ function createPetState() {
     specialEyes: null,
     cheeksVisible: false,
     effect: null,
+    poseFrame: null,
   };
 }
 
@@ -75,6 +76,8 @@ function createDomRefs() {
     mouth: null,
     effect: null,
     zzz: null,
+    pose: null,
+    standardLayers: [],
   };
 }
 
@@ -125,6 +128,16 @@ export function createPet(options = {}) {
     },
     play(actionId) {
       return playNamedAction(actionId);
+    },
+    sleep() {
+      resetInteractionClock();
+      beginSleepSequence({ force: true });
+      return controller;
+    },
+    wake() {
+      resetInteractionClock();
+      wakeUp();
+      return controller;
     },
     setPosition(nextPosition = {}) {
       settings.position = normalizePosition({
@@ -220,6 +233,8 @@ export function createPet(options = {}) {
     dom.mouth = dom.root.querySelector('[data-part="mouth"]');
     dom.effect = dom.root.querySelector('[data-part="effect"]');
     dom.zzz = dom.root.querySelector('[data-part="zzz"]');
+    dom.pose = dom.root.querySelector('[data-part="pose"]');
+    dom.standardLayers = Array.from(dom.root.querySelectorAll('[data-layer="standard"]'));
   }
 
   function bindEvents() {
@@ -260,6 +275,12 @@ export function createPet(options = {}) {
       ? assets.eyes.special?.[petState.specialEyes]
       : null;
     const effectSrc = petState.effect ? assets.effects?.[petState.effect] : null;
+    const poseSrc = petState.poseFrame ? assets.poses?.[petState.poseFrame] : null;
+    const poseActive = Boolean(poseSrc);
+
+    dom.standardLayers.forEach((layer) => {
+      layer.hidden = poseActive;
+    });
 
     setImage(dom.eyeLeft, assets.eyes.left[petState.eyes.left], Boolean(specialEyeSrc));
     setImage(dom.eyeRight, assets.eyes.right[petState.eyes.right], Boolean(specialEyeSrc));
@@ -269,9 +290,10 @@ export function createPet(options = {}) {
     setImage(dom.mouth, assets.mouths[petState.mouthState] ?? assets.mouths.normal);
     setImage(dom.cheekLeft, assets.cheeks.blushLeft, !petState.cheeksVisible);
     setImage(dom.cheekRight, assets.cheeks.blushRight, !petState.cheeksVisible);
-    setImage(dom.effect, effectSrc, !effectSrc);
+    setImage(dom.effect, effectSrc, poseActive || !effectSrc);
+    setImage(dom.pose, poseSrc, !poseActive);
 
-    dom.zzz.hidden = !sleeping;
+    dom.zzz.hidden = poseActive || !sleeping;
     dom.pet.className = "pet";
     dom.pet.dataset.mainState = petState.mainState;
     dom.pet.classList.toggle("pet--head-lift", petState.headLiftActive);
@@ -309,6 +331,7 @@ export function createPet(options = {}) {
     petState.specialEyes = null;
     petState.cheeksVisible = false;
     petState.effect = null;
+    petState.poseFrame = null;
   }
 
   function applyPose(pose = {}) {
@@ -351,6 +374,10 @@ export function createPet(options = {}) {
 
     if (hasOwn(pose, "effect")) {
       petState.effect = pose.effect;
+    }
+
+    if (hasOwn(pose, "poseFrame")) {
+      petState.poseFrame = pose.poseFrame;
     }
   }
 
@@ -426,6 +453,7 @@ export function createPet(options = {}) {
       petState.mainState === MAIN_STATES.IDLE &&
       !petState.sleepPending &&
       !petState.specialEyes &&
+      !petState.poseFrame &&
       petState.eyes.left !== EYE_STATES.CLOSE &&
       petState.eyes.right !== EYE_STATES.CLOSE
     );
@@ -606,13 +634,15 @@ export function createPet(options = {}) {
     playConfiguredIdleAction(action);
   }
 
-  function beginSleepSequence() {
+  function beginSleepSequence(options = {}) {
+    const force = Boolean(options.force);
+
     if (
       petState.mainState === MAIN_STATES.SLEEP ||
       petState.sleepPending ||
-      petState.isBusy
+      (!force && petState.isBusy)
     ) {
-      return;
+      return false;
     }
 
     clearRandomTimer();
@@ -628,6 +658,8 @@ export function createPet(options = {}) {
       petState.isBusy = false;
       renderPet();
     }, normalizeDelay(actions.sleep?.transitionDelay, 1400));
+
+    return true;
   }
 
   function wakeUp() {
@@ -735,6 +767,7 @@ function createDefaultSleepPendingPose() {
     specialEyes: null,
     cheeks: false,
     effect: null,
+    poseFrame: null,
   };
 }
 
@@ -756,6 +789,7 @@ function createDefaultWakeStartPose() {
     headLift: true,
     tailBoost: true,
     effect: "exclamation",
+    poseFrame: null,
   };
 }
 
@@ -766,6 +800,7 @@ function createDefaultWakeFinishPose() {
     headLift: false,
     tailBoost: false,
     effect: null,
+    poseFrame: null,
   };
 }
 

@@ -10,13 +10,15 @@
     "headLift": true,
     "tailBoost": true,
     "cheeks": false,
-    "effect": "exclamation"
+    "effect": "exclamation",
+    "poseFrame": null
   },
   "finishPose": {
     "eyes": { "left": "open", "right": "open" },
     "flipperFrame": "frame1",
     "headLift": false,
     "tailBoost": false,
-    "effect": null
+    "effect": null,
+    "poseFrame": null
   }
 }

@@ -12,13 +12,13 @@ export function createPetMarkup(assets, labels) {
     <div class="pet-shell">
       <button class="pet" data-part="pet" type="button" aria-label="${escapeHtml(labels.idle)}">
         <span class="pet__scene" data-part="scene">
-          <img class="pet__layer pet__shadow" src="${assets.core.shadow}" alt="" />
-          <img class="pet__layer pet__body" src="${assets.core.body}" alt="" />
-          <img class="pet__layer pet__tail" src="${assets.core.tail}" alt="" />
-          <img class="pet__layer pet__tail-cover" src="${assets.core.tailCover}" alt="" />
-          <img class="pet__layer pet__flipper pet__flipper--left" data-part="flipper-left" src="${assets.flippers.left.frame1}" alt="" />
-          <img class="pet__layer pet__flipper pet__flipper--right" data-part="flipper-right" src="${assets.flippers.right.frame1}" alt="" />
-          <span class="pet__head-wrap">
+          <img class="pet__layer pet__shadow" data-layer="standard" src="${assets.core.shadow}" alt="" />
+          <img class="pet__layer pet__body" data-layer="standard" src="${assets.core.body}" alt="" />
+          <img class="pet__layer pet__tail" data-layer="standard" src="${assets.core.tail}" alt="" />
+          <img class="pet__layer pet__tail-cover" data-layer="standard" src="${assets.core.tailCover}" alt="" />
+          <img class="pet__layer pet__flipper pet__flipper--left" data-layer="standard" data-part="flipper-left" src="${assets.flippers.left.frame1}" alt="" />
+          <img class="pet__layer pet__flipper pet__flipper--right" data-layer="standard" data-part="flipper-right" src="${assets.flippers.right.frame1}" alt="" />
+          <span class="pet__head-wrap" data-layer="standard">
             <span class="pet__head-track" data-part="head-track">
               <img class="pet__layer pet__head" src="${assets.core.head}" alt="" />
               <img class="pet__layer pet__eye pet__eye--left" data-part="eye-left" src="${assets.eyes.left.open}" alt="" />
@@ -31,6 +31,7 @@ export function createPetMarkup(assets, labels) {
           </span>
           <img class="pet__layer pet__effect" data-part="effect" src="${assets.effects.exclamation}" alt="" hidden />
           <img class="pet__layer pet__zzz" data-part="zzz" src="${assets.effects.zzz}" alt="" hidden />
+          <img class="pet__layer pet__pose" data-part="pose" src="${assets.poses.wave1}" alt="" hidden />
         </span>
       </button>
     </div>

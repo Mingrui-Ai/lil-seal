@@ -125,6 +125,10 @@
   animation: zzz-fade 3.4s ease-in-out infinite;
 }
 
+.pet__pose {
+  z-index: 9;
+}
+
 .pet[data-main-state="idle"] .pet__scene {
   animation: scene-idle 3s ease-in-out infinite;
 }

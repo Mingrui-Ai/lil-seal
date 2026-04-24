@@ -1,0 +1,18 @@
+{
+  "id": "wave",
+  "finishDelay": 560,
+  "steps": [
+    {
+      "delay": 0,
+      "pose": {
+        "poseFrame": "wave1",
+        "specialEyes": null,
+        "cheeks": false,
+        "effect": null
+      }
+    },
+    { "delay": 140, "pose": { "poseFrame": "wave2" } },
+    { "delay": 280, "pose": { "poseFrame": "wave1" } },
+    { "delay": 420, "pose": { "poseFrame": "wave2" } }
+  ]
+}

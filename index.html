@@ -10,13 +10,28 @@
   </head>
   <body class="demo-page">
     <main class="demo-main">
-      <section class="demo-card">
+      <section class="demo-panel">
         <p class="demo-card__eyebrow">Web Pet Demo</p>
-        <h1>小海豹 Buddy 第一版</h1>
+        <h1>小海豹 Buddy 行为测试</h1>
         <p class="demo-card__lead">
-          这只小海豹会待机呼吸、随机眨眼、偶尔吐舌头；一段时间不理它，它就会在角落里睡着。
+          这只小海豹会待机呼吸、随机眨眼、偶尔吐舌头；现在也可以直接触发指定行为。
         </p>
-        <p class="demo-card__tip">点击左下角的小海豹试试看。</p>
+      </section>
+
+      <section class="demo-controls" aria-label="行为测试">
+        <div class="demo-controls__header">
+          <p class="demo-card__eyebrow">Actions</p>
+          <h2>触发行为</h2>
+        </div>
+        <div class="demo-actions">
+          <button class="demo-action" type="button" data-action="talk" disabled>说话</button>
+          <button class="demo-action" type="button" data-command="sleep" disabled>睡觉</button>
+          <button class="demo-action" type="button" data-command="wake" disabled>醒来</button>
+          <button class="demo-action" type="button" data-action="wave" disabled>挥手</button>
+          <button class="demo-action" type="button" data-action="happy_star" disabled>星星眼</button>
+          <button class="demo-action" type="button" data-action="love_blush" disabled>害羞</button>
+        </div>
+        <p class="demo-status" data-status>准备中</p>
       </section>
     </main>
 

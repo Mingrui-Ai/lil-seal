@@ -57,9 +57,11 @@
       "thinking": "effects/thinking.png",
       "drop": "effects/drop.png",
       "chat": "effects/chat.png",
-      "cloud": "effects/cloud.png",
-      "wave1": "effects/wave_01.png",
-      "wave2": "effects/wave_02.png"
+      "cloud": "effects/cloud.png"
+    },
+    "poses": {
+      "wave1": "poses/wave_01.png",
+      "wave2": "poses/wave_02.png"
     },
     "reference": {
       "all": "reference/all.png"
@@ -70,6 +72,7 @@
     "click": "actions/click.json",
     "sleep": "actions/sleep.json",
     "wake": "actions/wake.json",
+    "wave": "actions/wave.json",
     "talk": "actions/talk.json"
   }
 }

@@ -46,12 +46,12 @@
     {
       "id": "flipper_wave",
       "weight": 12,
-      "finishDelay": 500,
+      "finishDelay": 560,
       "steps": [
-        { "delay": 0, "pose": { "flipperFrame": "frame2", "effect": "wave1" } },
-        { "delay": 120, "pose": { "flipperFrame": "frame1", "effect": "wave2" } },
-        { "delay": 240, "pose": { "flipperFrame": "frame2", "effect": "wave1" } },
-        { "delay": 360, "pose": { "flipperFrame": "frame1", "effect": null } }
+        { "delay": 0, "pose": { "poseFrame": "wave1", "effect": null, "cheeks": false, "specialEyes": null } },
+        { "delay": 140, "pose": { "poseFrame": "wave2" } },
+        { "delay": 280, "pose": { "poseFrame": "wave1" } },
+        { "delay": 420, "pose": { "poseFrame": "wave2" } }
       ]
     },
     {
