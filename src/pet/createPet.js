@@ -1,30 +1,24 @@
 import {
-  BLINK_STEP,
   DEFAULT_POSITION,
   EYE_FOLLOW_LIMITS,
   EYE_STATES,
+  FLIPPER_FRAMES,
   FOLLOW_LERP,
   HEAD_FOLLOW_LIMITS,
-  LOW_EYE_DURATION,
   MAIN_STATES,
   MOUTH_STATES,
-  PAW_FRAMES,
-  PAW_WAVE_DURATION,
-  RANDOM_DELAY,
   SLEEP_CHECK_INTERVAL,
   SLEEP_DELAY,
-  SLEEP_TRANSITION_DURATION,
-  TAIL_BOOST_DURATION,
-  TONGUE_DURATION,
-  WAKE_DURATION,
 } from "./constants.js";
-import { collectAssetPaths, createAssetMap } from "./assets.js";
+import { collectAssetPaths, loadPetCatalog } from "./assets.js";
 import { createPetMarkup } from "./template.js";
 
 const DEFAULT_LABELS = Object.freeze({
   idle: "Interact with the seal",
   sleep: "Wake the seal",
 });
+
+const DEFAULT_RANDOM_DELAY = Object.freeze({ min: 3200, max: 6800 });
 
 function createPetState() {
   return {
@@ -34,13 +28,16 @@ function createPetState() {
       right: EYE_STATES.OPEN,
     },
     mouthState: MOUTH_STATES.NORMAL,
-    pawFrame: PAW_FRAMES.FRAME1,
+    flipperFrame: FLIPPER_FRAMES.FRAME1,
     lastInteractionAt: Date.now(),
     sleepAfterMs: randomBetween(SLEEP_DELAY.min, SLEEP_DELAY.max),
     isBusy: false,
     sleepPending: false,
     headLiftActive: false,
     tailBoostActive: false,
+    specialEyes: null,
+    cheeksVisible: false,
+    effect: null,
   };
 }
 
@@ -68,11 +65,15 @@ function createDomRefs() {
     pet: null,
     scene: null,
     headTrack: null,
-    pawLeft: null,
-    pawRight: null,
+    flipperLeft: null,
+    flipperRight: null,
     eyeLeft: null,
     eyeRight: null,
+    specialEyes: null,
+    cheekLeft: null,
+    cheekRight: null,
     mouth: null,
+    effect: null,
     zzz: null,
   };
 }
@@ -80,6 +81,7 @@ function createDomRefs() {
 export function createPet(options = {}) {
   const settings = {
     assetBase: options.assetBase,
+    assetManifest: options.assetManifest,
     hidden: Boolean(options.hidden),
     labels: {
       idle: options.labels?.idle ?? DEFAULT_LABELS.idle,
@@ -95,7 +97,8 @@ export function createPet(options = {}) {
   let timers = createTimerState();
   let followState = createFollowState();
   let listeners = [];
-  let assets = createAssetMap(settings.assetBase);
+  let assets = null;
+  let actions = {};
   let readyPromise;
 
   const controller = {
@@ -110,13 +113,18 @@ export function createPet(options = {}) {
     show() {
       settings.hidden = false;
       applyVisibility();
+      scheduleRandomAction();
       return controller;
     },
     hide() {
       settings.hidden = true;
       resetFollowTargets();
+      clearRandomTimer();
       applyVisibility();
       return controller;
+    },
+    play(actionId) {
+      return playNamedAction(actionId);
     },
     setPosition(nextPosition = {}) {
       settings.position = normalizePosition({
@@ -156,7 +164,8 @@ export function createPet(options = {}) {
     timers = createTimerState();
     followState = createFollowState();
     dom = createDomRefs();
-    assets = createAssetMap(settings.assetBase);
+    assets = null;
+    actions = {};
 
     dom.root = document.createElement("div");
     dom.root.className = "pet-host";
@@ -166,6 +175,13 @@ export function createPet(options = {}) {
     mountTarget.append(dom.root);
 
     try {
+      const catalog = await loadPetCatalog({
+        assetBase: settings.assetBase,
+        assetManifest: settings.assetManifest,
+      });
+
+      assets = catalog.assets;
+      actions = catalog.actions;
       await preloadAssets(collectAssetPaths(assets));
 
       if (mountSession !== currentSession || !dom.root) {
@@ -194,11 +210,15 @@ export function createPet(options = {}) {
     dom.pet = dom.root.querySelector('[data-part="pet"]');
     dom.scene = dom.root.querySelector('[data-part="scene"]');
     dom.headTrack = dom.root.querySelector('[data-part="head-track"]');
-    dom.pawLeft = dom.root.querySelector('[data-part="paw-left"]');
-    dom.pawRight = dom.root.querySelector('[data-part="paw-right"]');
+    dom.flipperLeft = dom.root.querySelector('[data-part="flipper-left"]');
+    dom.flipperRight = dom.root.querySelector('[data-part="flipper-right"]');
     dom.eyeLeft = dom.root.querySelector('[data-part="eye-left"]');
     dom.eyeRight = dom.root.querySelector('[data-part="eye-right"]');
+    dom.specialEyes = dom.root.querySelector('[data-part="special-eyes"]');
+    dom.cheekLeft = dom.root.querySelector('[data-part="cheek-left"]');
+    dom.cheekRight = dom.root.querySelector('[data-part="cheek-right"]');
     dom.mouth = dom.root.querySelector('[data-part="mouth"]');
+    dom.effect = dom.root.querySelector('[data-part="effect"]');
     dom.zzz = dom.root.querySelector('[data-part="zzz"]');
   }
 
@@ -231,23 +251,27 @@ export function createPet(options = {}) {
   }
 
   function renderPet() {
-    if (!dom.pet) {
+    if (!dom.pet || !assets) {
       return;
     }
 
     const sleeping = petState.mainState === MAIN_STATES.SLEEP;
+    const specialEyeSrc = petState.specialEyes
+      ? assets.eyes.special?.[petState.specialEyes]
+      : null;
+    const effectSrc = petState.effect ? assets.effects?.[petState.effect] : null;
 
-    dom.eyeLeft.src = assets.eyes.left[petState.eyes.left];
-    dom.eyeRight.src = assets.eyes.right[petState.eyes.right];
-    dom.pawLeft.src = assets.paws.left[petState.pawFrame];
-    dom.pawRight.src = assets.paws.right[petState.pawFrame];
-    dom.mouth.src = assets.mouths[petState.mouthState];
+    setImage(dom.eyeLeft, assets.eyes.left[petState.eyes.left], Boolean(specialEyeSrc));
+    setImage(dom.eyeRight, assets.eyes.right[petState.eyes.right], Boolean(specialEyeSrc));
+    setImage(dom.specialEyes, specialEyeSrc, !specialEyeSrc);
+    setImage(dom.flipperLeft, assets.flippers.left[petState.flipperFrame]);
+    setImage(dom.flipperRight, assets.flippers.right[petState.flipperFrame]);
+    setImage(dom.mouth, assets.mouths[petState.mouthState] ?? assets.mouths.normal);
+    setImage(dom.cheekLeft, assets.cheeks.blushLeft, !petState.cheeksVisible);
+    setImage(dom.cheekRight, assets.cheeks.blushRight, !petState.cheeksVisible);
+    setImage(dom.effect, effectSrc, !effectSrc);
 
-    dom.eyeLeft.hidden = false;
-    dom.eyeRight.hidden = false;
-    dom.mouth.hidden = false;
     dom.zzz.hidden = !sleeping;
-
     dom.pet.className = "pet";
     dom.pet.dataset.mainState = petState.mainState;
     dom.pet.classList.toggle("pet--head-lift", petState.headLiftActive);
@@ -261,26 +285,73 @@ export function createPet(options = {}) {
     applyFollowTransforms();
   }
 
+  function setImage(element, src, hidden = false) {
+    if (!element) {
+      return;
+    }
+
+    if (src) {
+      element.src = src;
+    }
+
+    element.hidden = hidden;
+  }
+
   function setIdlePose(eyes = { left: EYE_STATES.OPEN, right: EYE_STATES.OPEN }) {
     petState.mainState = MAIN_STATES.IDLE;
     petState.sleepPending = false;
     petState.eyes.left = eyes.left;
     petState.eyes.right = eyes.right;
     petState.mouthState = MOUTH_STATES.NORMAL;
-    petState.pawFrame = PAW_FRAMES.FRAME1;
+    petState.flipperFrame = FLIPPER_FRAMES.FRAME1;
     petState.headLiftActive = false;
     petState.tailBoostActive = false;
+    petState.specialEyes = null;
+    petState.cheeksVisible = false;
+    petState.effect = null;
   }
 
-  function setSleepPose() {
-    petState.mainState = MAIN_STATES.SLEEP;
-    petState.sleepPending = false;
-    petState.eyes.left = EYE_STATES.LOW;
-    petState.eyes.right = EYE_STATES.LOW;
-    petState.mouthState = MOUTH_STATES.NORMAL;
-    petState.pawFrame = PAW_FRAMES.FRAME1;
-    petState.headLiftActive = false;
-    petState.tailBoostActive = false;
+  function applyPose(pose = {}) {
+    if (hasOwn(pose, "mainState")) {
+      petState.mainState = pose.mainState;
+    }
+
+    if (hasOwn(pose, "sleepPending")) {
+      petState.sleepPending = Boolean(pose.sleepPending);
+    }
+
+    if (pose.eyes) {
+      petState.eyes.left = pose.eyes.left ?? petState.eyes.left;
+      petState.eyes.right = pose.eyes.right ?? petState.eyes.right;
+    }
+
+    if (hasOwn(pose, "mouth")) {
+      petState.mouthState = pose.mouth ?? MOUTH_STATES.NORMAL;
+    }
+
+    if (hasOwn(pose, "flipperFrame")) {
+      petState.flipperFrame = pose.flipperFrame ?? FLIPPER_FRAMES.FRAME1;
+    }
+
+    if (hasOwn(pose, "headLift")) {
+      petState.headLiftActive = Boolean(pose.headLift);
+    }
+
+    if (hasOwn(pose, "tailBoost")) {
+      petState.tailBoostActive = Boolean(pose.tailBoost);
+    }
+
+    if (hasOwn(pose, "specialEyes")) {
+      petState.specialEyes = pose.specialEyes;
+    }
+
+    if (hasOwn(pose, "cheeks")) {
+      petState.cheeksVisible = Boolean(pose.cheeks);
+    }
+
+    if (hasOwn(pose, "effect")) {
+      petState.effect = pose.effect;
+    }
   }
 
   function clearRandomTimer() {
@@ -354,6 +425,7 @@ export function createPet(options = {}) {
       !settings.hidden &&
       petState.mainState === MAIN_STATES.IDLE &&
       !petState.sleepPending &&
+      !petState.specialEyes &&
       petState.eyes.left !== EYE_STATES.CLOSE &&
       petState.eyes.right !== EYE_STATES.CLOSE
     );
@@ -435,8 +507,64 @@ export function createPet(options = {}) {
     scheduleRandomAction();
   }
 
+  function playPoseSequence(action, onFinish) {
+    const steps = Array.isArray(action?.steps) ? action.steps : [];
+    const latestDelay = steps.reduce(
+      (latest, step) => Math.max(latest, normalizeDelay(step.delay)),
+      0
+    );
+
+    steps.forEach((step) => {
+      const runStep = () => {
+        applyPose(step.pose);
+        renderPet();
+      };
+      const delay = normalizeDelay(step.delay);
+
+      if (delay <= 0) {
+        runStep();
+        return;
+      }
+
+      scheduleAction(runStep, delay);
+    });
+
+    scheduleAction(onFinish, normalizeDelay(action?.finishDelay, latestDelay + 80));
+  }
+
+  function playConfiguredIdleAction(action) {
+    prepareIdleAction();
+    playPoseSequence(action, finishIdleAction);
+  }
+
+  function playNamedAction(actionId) {
+    if (!actionId || settings.hidden || petState.isBusy || !assets) {
+      return false;
+    }
+
+    const action = findAction(actionId);
+
+    if (!action) {
+      return false;
+    }
+
+    resetInteractionClock();
+    playConfiguredIdleAction(action);
+    return true;
+  }
+
+  function findAction(actionId) {
+    if (actions[actionId]?.steps) {
+      return actions[actionId];
+    }
+
+    return actions.randomIdle?.actions?.find((action) => action.id === actionId) ?? null;
+  }
+
   function scheduleRandomAction() {
     if (
+      !assets ||
+      !dom.pet ||
       settings.hidden ||
       petState.mainState !== MAIN_STATES.IDLE ||
       petState.isBusy ||
@@ -445,10 +573,11 @@ export function createPet(options = {}) {
       return;
     }
 
+    const delayRange = getDelayRange(actions.randomIdle?.delay);
     clearRandomTimer();
     timers.random = window.setTimeout(
       runRandomAction,
-      randomBetween(RANDOM_DELAY.min, RANDOM_DELAY.max)
+      randomBetween(delayRange.min, delayRange.max)
     );
   }
 
@@ -467,148 +596,14 @@ export function createPet(options = {}) {
       return;
     }
 
-    const roll = Math.random();
+    const action = chooseWeightedAction(actions.randomIdle?.actions);
 
-    if (roll < 0.3) {
-      playEyeSequence([
-        { delay: 0, left: EYE_STATES.CLOSE, right: EYE_STATES.CLOSE },
-        { delay: BLINK_STEP, left: EYE_STATES.OPEN, right: EYE_STATES.OPEN },
-        {
-          delay: BLINK_STEP * 2 + 40,
-          left: EYE_STATES.CLOSE,
-          right: EYE_STATES.CLOSE,
-        },
-        {
-          delay: BLINK_STEP * 3 + 40,
-          left: EYE_STATES.OPEN,
-          right: EYE_STATES.OPEN,
-        },
-      ]);
+    if (!action) {
+      scheduleRandomAction();
       return;
     }
 
-    if (roll < 0.46) {
-      playEyeSequence([
-        { delay: 0, left: EYE_STATES.CLOSE, right: EYE_STATES.OPEN },
-        { delay: BLINK_STEP, left: EYE_STATES.OPEN, right: EYE_STATES.OPEN },
-      ]);
-      return;
-    }
-
-    if (roll < 0.62) {
-      playEyeSequence([
-        { delay: 0, left: EYE_STATES.OPEN, right: EYE_STATES.CLOSE },
-        { delay: BLINK_STEP, left: EYE_STATES.OPEN, right: EYE_STATES.OPEN },
-      ]);
-      return;
-    }
-
-    if (roll < 0.78) {
-      playEyeSequence([
-        { delay: 0, left: EYE_STATES.LOW, right: EYE_STATES.LOW },
-        {
-          delay: LOW_EYE_DURATION,
-          left: EYE_STATES.OPEN,
-          right: EYE_STATES.OPEN,
-        },
-      ]);
-      return;
-    }
-
-    if (roll < 0.9) {
-      playPawWave();
-      return;
-    }
-
-    if (roll < 0.97) {
-      playTongueAction(false);
-      return;
-    }
-
-    playTailBoostAction();
-  }
-
-  function playEyeSequence(steps) {
-    prepareIdleAction();
-
-    const [firstStep, ...restSteps] = steps;
-    petState.eyes.left = firstStep.left;
-    petState.eyes.right = firstStep.right;
-    renderPet();
-
-    restSteps.forEach((step) => {
-      scheduleAction(() => {
-        petState.eyes.left = step.left;
-        petState.eyes.right = step.right;
-        renderPet();
-      }, step.delay);
-    });
-
-    const totalDuration = steps[steps.length - 1].delay + 80;
-    scheduleAction(finishIdleAction, totalDuration);
-  }
-
-  function playTongueAction(fromClick) {
-    prepareIdleAction();
-
-    petState.mouthState = MOUTH_STATES.TONGUE;
-    petState.tailBoostActive = true;
-    petState.headLiftActive = fromClick;
-    petState.eyes.left = fromClick ? EYE_STATES.LOW : EYE_STATES.OPEN;
-    petState.eyes.right = fromClick ? EYE_STATES.LOW : EYE_STATES.OPEN;
-    petState.pawFrame = fromClick ? PAW_FRAMES.FRAME2 : PAW_FRAMES.FRAME1;
-    renderPet();
-
-    if (fromClick) {
-      scheduleAction(() => {
-        petState.pawFrame = PAW_FRAMES.FRAME1;
-        renderPet();
-      }, 120);
-
-      scheduleAction(() => {
-        petState.pawFrame = PAW_FRAMES.FRAME2;
-        renderPet();
-      }, 220);
-
-      scheduleAction(() => {
-        petState.eyes.left = EYE_STATES.OPEN;
-        petState.eyes.right = EYE_STATES.OPEN;
-        petState.pawFrame = PAW_FRAMES.FRAME1;
-        renderPet();
-      }, 320);
-    }
-
-    scheduleAction(finishIdleAction, TONGUE_DURATION);
-  }
-
-  function playPawWave() {
-    prepareIdleAction();
-    petState.pawFrame = PAW_FRAMES.FRAME2;
-    renderPet();
-
-    scheduleAction(() => {
-      petState.pawFrame = PAW_FRAMES.FRAME1;
-      renderPet();
-    }, 120);
-
-    scheduleAction(() => {
-      petState.pawFrame = PAW_FRAMES.FRAME2;
-      renderPet();
-    }, 240);
-
-    scheduleAction(() => {
-      petState.pawFrame = PAW_FRAMES.FRAME1;
-      renderPet();
-    }, 360);
-
-    scheduleAction(finishIdleAction, PAW_WAVE_DURATION);
-  }
-
-  function playTailBoostAction() {
-    prepareIdleAction();
-    petState.tailBoostActive = true;
-    renderPet();
-    scheduleAction(finishIdleAction, TAIL_BOOST_DURATION);
+    playConfiguredIdleAction(action);
   }
 
   function beginSleepSequence() {
@@ -625,19 +620,14 @@ export function createPet(options = {}) {
 
     petState.isBusy = true;
     petState.sleepPending = true;
-    petState.eyes.left = EYE_STATES.LOW;
-    petState.eyes.right = EYE_STATES.LOW;
-    petState.mouthState = MOUTH_STATES.NORMAL;
-    petState.pawFrame = PAW_FRAMES.FRAME1;
-    petState.headLiftActive = false;
-    petState.tailBoostActive = false;
+    applyPose(actions.sleep?.pendingPose ?? createDefaultSleepPendingPose());
     renderPet();
 
     scheduleAction(() => {
-      setSleepPose();
+      applyPose(actions.sleep?.sleepPose ?? createDefaultSleepPose());
       petState.isBusy = false;
       renderPet();
-    }, SLEEP_TRANSITION_DURATION);
+    }, normalizeDelay(actions.sleep?.transitionDelay, 1400));
   }
 
   function wakeUp() {
@@ -645,26 +635,15 @@ export function createPet(options = {}) {
     clearActionTimers();
 
     petState.isBusy = true;
-    petState.mainState = MAIN_STATES.IDLE;
-    petState.sleepPending = false;
-    petState.eyes.left = EYE_STATES.LOW;
-    petState.eyes.right = EYE_STATES.LOW;
-    petState.mouthState = MOUTH_STATES.NORMAL;
-    petState.pawFrame = PAW_FRAMES.FRAME2;
-    petState.headLiftActive = true;
-    petState.tailBoostActive = true;
+    applyPose(actions.wake?.startPose ?? createDefaultWakeStartPose());
     renderPet();
 
     scheduleAction(() => {
-      petState.pawFrame = PAW_FRAMES.FRAME1;
-      petState.eyes.left = EYE_STATES.OPEN;
-      petState.eyes.right = EYE_STATES.OPEN;
-      petState.headLiftActive = false;
-      petState.tailBoostActive = false;
+      applyPose(actions.wake?.finishPose ?? createDefaultWakeFinishPose());
       petState.isBusy = false;
       renderPet();
       scheduleRandomAction();
-    }, WAKE_DURATION);
+    }, normalizeDelay(actions.wake?.duration, 360));
   }
 
   function handleClick() {
@@ -675,7 +654,7 @@ export function createPet(options = {}) {
       return;
     }
 
-    playTongueAction(true);
+    playConfiguredIdleAction(actions.click);
   }
 
   function startSleepChecker() {
@@ -719,7 +698,7 @@ export function createPet(options = {}) {
   function showFallback(error) {
     console.error(error);
     dom.root.innerHTML =
-      '<p class="pet__fallback">Pet assets failed to load. Check <code>assets/pet</code>.</p>';
+      '<p class="pet__fallback">Pet assets failed to load. Check <code>assets/pet/manifest.json</code>.</p>';
   }
 
   function teardown() {
@@ -740,7 +719,54 @@ export function createPet(options = {}) {
     petState = createPetState();
     timers = createTimerState();
     followState = createFollowState();
+    assets = null;
+    actions = {};
   }
+}
+
+function createDefaultSleepPendingPose() {
+  return {
+    sleepPending: true,
+    eyes: { left: EYE_STATES.LOW, right: EYE_STATES.LOW },
+    mouth: MOUTH_STATES.NORMAL,
+    flipperFrame: FLIPPER_FRAMES.FRAME1,
+    headLift: false,
+    tailBoost: false,
+    specialEyes: null,
+    cheeks: false,
+    effect: null,
+  };
+}
+
+function createDefaultSleepPose() {
+  return {
+    ...createDefaultSleepPendingPose(),
+    mainState: MAIN_STATES.SLEEP,
+    sleepPending: false,
+  };
+}
+
+function createDefaultWakeStartPose() {
+  return {
+    mainState: MAIN_STATES.IDLE,
+    sleepPending: false,
+    eyes: { left: EYE_STATES.LOW, right: EYE_STATES.LOW },
+    mouth: MOUTH_STATES.NORMAL,
+    flipperFrame: FLIPPER_FRAMES.FRAME2,
+    headLift: true,
+    tailBoost: true,
+    effect: "exclamation",
+  };
+}
+
+function createDefaultWakeFinishPose() {
+  return {
+    eyes: { left: EYE_STATES.OPEN, right: EYE_STATES.OPEN },
+    flipperFrame: FLIPPER_FRAMES.FRAME1,
+    headLift: false,
+    tailBoost: false,
+    effect: null,
+  };
 }
 
 function resolveMountTarget(target) {
@@ -801,6 +827,43 @@ function normalizeNumber(value, fallback) {
   return fallback;
 }
 
+function normalizeDelay(value, fallback = 0) {
+  return normalizeNumber(value, fallback);
+}
+
+function getDelayRange(range = DEFAULT_RANDOM_DELAY) {
+  return {
+    min: normalizeNumber(range.min, DEFAULT_RANDOM_DELAY.min),
+    max: normalizeNumber(range.max, DEFAULT_RANDOM_DELAY.max),
+  };
+}
+
+function chooseWeightedAction(actionList) {
+  const actions = Array.isArray(actionList)
+    ? actionList.filter((action) => Array.isArray(action.steps))
+    : [];
+
+  if (!actions.length) {
+    return null;
+  }
+
+  const totalWeight = actions.reduce(
+    (total, action) => total + normalizeNumber(action.weight, 1),
+    0
+  );
+  let roll = Math.random() * totalWeight;
+
+  for (const action of actions) {
+    roll -= normalizeNumber(action.weight, 1);
+
+    if (roll <= 0) {
+      return action;
+    }
+  }
+
+  return actions[actions.length - 1];
+}
+
 function preloadAssets(paths) {
   return Promise.all(paths.map(preloadImage));
 }
@@ -824,6 +887,10 @@ function clamp(value, min, max) {
 
 function lerp(current, target, factor) {
   return current + (target - current) * factor;
+}
+
+function hasOwn(source, key) {
+  return Object.prototype.hasOwnProperty.call(source, key);
 }
 
 export default createPet;

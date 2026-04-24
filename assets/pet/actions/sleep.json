@@ -1,0 +1,27 @@
+{
+  "id": "sleep",
+  "transitionDelay": 1400,
+  "pendingPose": {
+    "sleepPending": true,
+    "eyes": { "left": "low", "right": "low" },
+    "mouth": "normal",
+    "flipperFrame": "frame1",
+    "headLift": false,
+    "tailBoost": false,
+    "specialEyes": null,
+    "cheeks": false,
+    "effect": null
+  },
+  "sleepPose": {
+    "mainState": "sleep",
+    "sleepPending": false,
+    "eyes": { "left": "low", "right": "low" },
+    "mouth": "normal",
+    "flipperFrame": "frame1",
+    "headLift": false,
+    "tailBoost": false,
+    "specialEyes": null,
+    "cheeks": false,
+    "effect": null
+  }
+}

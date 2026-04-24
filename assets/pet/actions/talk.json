@@ -1,0 +1,11 @@
+{
+  "id": "talk",
+  "finishDelay": 720,
+  "steps": [
+    { "delay": 0, "pose": { "mouth": "speak1", "effect": "ellipsis" } },
+    { "delay": 120, "pose": { "mouth": "speak2" } },
+    { "delay": 240, "pose": { "mouth": "speak3" } },
+    { "delay": 360, "pose": { "mouth": "speak1" } },
+    { "delay": 520, "pose": { "mouth": "normal", "effect": null } }
+  ]
+}

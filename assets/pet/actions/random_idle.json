@@ -1,0 +1,92 @@
+{
+  "id": "random_idle",
+  "delay": {
+    "min": 3200,
+    "max": 6800
+  },
+  "actions": [
+    {
+      "id": "blink_double",
+      "weight": 30,
+      "finishDelay": 500,
+      "steps": [
+        { "delay": 0, "pose": { "eyes": { "left": "close", "right": "close" } } },
+        { "delay": 140, "pose": { "eyes": { "left": "open", "right": "open" } } },
+        { "delay": 320, "pose": { "eyes": { "left": "close", "right": "close" } } },
+        { "delay": 460, "pose": { "eyes": { "left": "open", "right": "open" } } }
+      ]
+    },
+    {
+      "id": "wink_left",
+      "weight": 16,
+      "finishDelay": 220,
+      "steps": [
+        { "delay": 0, "pose": { "eyes": { "left": "close", "right": "open" } } },
+        { "delay": 140, "pose": { "eyes": { "left": "open", "right": "open" } } }
+      ]
+    },
+    {
+      "id": "wink_right",
+      "weight": 16,
+      "finishDelay": 220,
+      "steps": [
+        { "delay": 0, "pose": { "eyes": { "left": "open", "right": "close" } } },
+        { "delay": 140, "pose": { "eyes": { "left": "open", "right": "open" } } }
+      ]
+    },
+    {
+      "id": "drowsy",
+      "weight": 16,
+      "finishDelay": 640,
+      "steps": [
+        { "delay": 0, "pose": { "eyes": { "left": "low", "right": "low" } } },
+        { "delay": 560, "pose": { "eyes": { "left": "open", "right": "open" } } }
+      ]
+    },
+    {
+      "id": "flipper_wave",
+      "weight": 12,
+      "finishDelay": 500,
+      "steps": [
+        { "delay": 0, "pose": { "flipperFrame": "frame2", "effect": "wave1" } },
+        { "delay": 120, "pose": { "flipperFrame": "frame1", "effect": "wave2" } },
+        { "delay": 240, "pose": { "flipperFrame": "frame2", "effect": "wave1" } },
+        { "delay": 360, "pose": { "flipperFrame": "frame1", "effect": null } }
+      ]
+    },
+    {
+      "id": "tongue",
+      "weight": 7,
+      "finishDelay": 920,
+      "steps": [
+        { "delay": 0, "pose": { "mouth": "tongue", "tailBoost": true } }
+      ]
+    },
+    {
+      "id": "tail_boost",
+      "weight": 3,
+      "finishDelay": 520,
+      "steps": [
+        { "delay": 0, "pose": { "tailBoost": true } }
+      ]
+    },
+    {
+      "id": "happy_star",
+      "weight": 3,
+      "finishDelay": 760,
+      "steps": [
+        { "delay": 0, "pose": { "specialEyes": "star", "effect": "exclamation", "tailBoost": true } },
+        { "delay": 420, "pose": { "effect": null } }
+      ]
+    },
+    {
+      "id": "love_blush",
+      "weight": 2,
+      "finishDelay": 820,
+      "steps": [
+        { "delay": 0, "pose": { "specialEyes": "love", "cheeks": true, "tailBoost": true } },
+        { "delay": 560, "pose": { "specialEyes": null, "cheeks": false } }
+      ]
+    }
+  ]
+}

@@ -2,18 +2,73 @@
 
 ## 这次重构做了什么
 
-- 把原来写死在 `src/main.js` 的自动启动脚本，拆成了可嵌入的桌宠内核和独立 demo 启动层。
-- 保留了当前静态项目的开发方式，`index.html` 依然可以单独预览动画。
-- 补齐了未来接入学习网站时最关键的实例生命周期能力：挂载、销毁、显示、隐藏、位置调整。
-- 把 demo 页面样式和桌宠本体样式分开，避免以后并站时把 `body`、`:root`、`.page` 之类样式带进主项目。
-- 修正了 demo 页里原先乱码的中文文案。
+- 把临时素材目录 `assets/data`、`assets/sucai` 统一整理为正式运行目录 `assets/pet/`。
+- 按资源语义拆分海豹素材：身体核心层、鳍、眼睛、嘴巴、腮红、特效、动作配置、参考图和原始工程稿。
+- 统一了素材命名，去掉 `!.png`、`....png`、`dorp.png`、`mouth_speek1.png` 这类不稳定或拼写错误的名字。
+- 新增 `assets/pet/manifest.json`，由清单统一描述运行素材、参考图和动作配置入口。
+- 新增 `assets/pet/actions/*.json`，把随机待机、点击、睡眠、醒来、说话动作从核心代码里拆出来。
+- 重构 `src/pet/assets.js`，运行时从 `manifest.json` 加载资源和动作配置，再统一解析为可用 URL。
+- 重构 `src/pet/createPet.js`，使用动作 JSON 的时间线执行姿态变化，新增特殊眼睛、腮红、特效层支持。
+- 保留原有桌宠生命周期 API，并新增 `play(actionId)`，方便外部主动触发配置中的动作。
 
-## 新目录结构
+## 当前目录结构
 
 ```text
 lil-seal/
   assets/
     pet/
+      README.md
+      manifest.json
+      actions/
+        click.json
+        random_idle.json
+        sleep.json
+        talk.json
+        wake.json
+      cheeks/
+        blush_left.png
+        blush_right.png
+      core/
+        body.png
+        head.png
+        shadow.png
+        tail.png
+        tail_cover.png
+      effects/
+        chat.png
+        cloud.png
+        drop.png
+        ellipsis.png
+        exclamation.png
+        question_mark.png
+        thinking.png
+        wave_01.png
+        wave_02.png
+        zzz.png
+      eyes/
+        left_close.png
+        left_low.png
+        left_open.png
+        love.png
+        right_close.png
+        right_low.png
+        right_open.png
+        star.png
+      flippers/
+        left_01.png
+        left_02.png
+        right_01.png
+        right_02.png
+      mouths/
+        normal.png
+        speak_01.png
+        speak_02.png
+        speak_03.png
+        tongue.png
+      reference/
+        all.png
+      source/
+        original/
   src/
     demo/
       boot.js
@@ -28,32 +83,57 @@ lil-seal/
   package.json
 ```
 
-## 各部分职责
+## 素材维护规则
 
-- `src/pet/createPet.js`
-  - 桌宠实例工厂。
-  - 对外提供 `createPet()`。
-  - 内部管理状态、随机动作、睡眠逻辑、眼球跟随、事件监听、定时器和销毁清理。
+- 所有运行时 PNG 继续保持透明 `768 x 768` 画布，确保图层可以直接叠放。
+- 新素材用英文小写和下划线命名。
+- 连续帧使用两位数字，例如 `left_01.png`、`speak_02.png`。
+- 运行时会用到的图片放入 `core`、`flippers`、`eyes`、`mouths`、`cheeks`、`effects`。
+- 参考整图放入 `reference/`，不要写入动作配置。
+- 原始可编辑文件放入 `source/original/`，不要让运行代码直接依赖。
+- 新增图片后先更新 `manifest.json`，再在对应动作 JSON 中使用语义 key。
 
-- `src/pet/assets.js`
-  - 统一管理资源路径。
-  - 支持默认本地资源目录，也支持以后通过 `assetBase` 改成别的静态资源前缀。
+## 资源清单
 
-- `src/pet/template.js`
-  - 只负责桌宠 DOM 结构模板。
-  - 去掉了依赖全局 `id` 的写法，改成实例内查询，方便以后组件化。
+`assets/pet/manifest.json` 是资源入口：
 
-- `src/pet/styles.css`
-  - 只保留桌宠自身样式和动画。
-  - 不再改全局页面背景、字体和布局。
+- `files.core`：身体、头、尾巴、阴影等基础图层。
+- `files.flippers`：左右鳍的帧。
+- `files.eyes.left/right`：普通左右眼状态。
+- `files.eyes.special`：爱心眼、星星眼这类整脸表情覆盖层。
+- `files.mouths`：普通嘴、吐舌头、说话帧。
+- `files.cheeks`：腮红覆盖层。
+- `files.effects`：气泡、问号、波浪、zzz 等整画布特效。
+- `actions`：动作 JSON 的入口路径。
 
-- `src/demo/boot.js`
-  - 只负责 demo 页启动。
-  - 以后真正接入别的项目时，这一层通常不需要搬过去。
+## 动作配置
 
-- `src/demo/demo.css`
-  - 专门放 demo 页面壳子的视觉样式。
-  - 和桌宠样式彻底分离。
+动作 JSON 使用时间线描述姿态变化：
+
+```json
+{
+  "id": "talk",
+  "finishDelay": 720,
+  "steps": [
+    { "delay": 0, "pose": { "mouth": "speak1", "effect": "ellipsis" } },
+    { "delay": 120, "pose": { "mouth": "speak2" } },
+    { "delay": 520, "pose": { "mouth": "normal", "effect": null } }
+  ]
+}
+```
+
+当前支持的 `pose` 字段：
+
+- `mainState`：`idle` 或 `sleep`。
+- `sleepPending`：睡眠过渡状态。
+- `eyes.left/right`：`open`、`low`、`close`。
+- `mouth`：`normal`、`tongue`、`speak1`、`speak2`、`speak3`。
+- `flipperFrame`：`frame1`、`frame2`。
+- `headLift`：是否触发抬头样式。
+- `tailBoost`：是否触发尾巴摆动样式。
+- `specialEyes`：`star`、`love`，或 `null` 清空。
+- `cheeks`：是否显示腮红。
+- `effect`：`chat`、`ellipsis`、`exclamation`、`wave1` 等，或 `null` 清空。
 
 ## 现在可用的桌宠 API
 
@@ -72,6 +152,8 @@ const pet = createPet({
 });
 
 await pet.ready;
+pet.play("talk");
+pet.play("happy_star");
 pet.hide();
 pet.show();
 pet.setPosition({ right: "24px", left: "auto" });
@@ -80,55 +162,21 @@ pet.destroy();
 
 ### 支持的能力
 
-- `mount(target)`
-  - 挂载到指定 DOM 节点。
+- `mount(target)`：挂载到指定 DOM 节点。
+- `destroy()`：清理 DOM、事件监听、`setTimeout`、`setInterval`、`requestAnimationFrame`。
+- `show()` / `hide()`：控制显示状态。
+- `setPosition(position)`：动态修改位置、缩放和层级。
+- `play(actionId)`：主动播放动作配置，例如 `talk`、`happy_star`、`love_blush`。
+- `ready`：资源清单、动作配置、图片预加载和首屏挂载完成后的 Promise。
 
-- `destroy()`
-  - 清理 DOM、事件监听、`setTimeout`、`setInterval`、`requestAnimationFrame`。
+## 后续新增动作流程
 
-- `show()` / `hide()`
-  - 控制显示状态。
+1. 把新图片放入对应目录，例如新表情放 `eyes/`，新气泡放 `effects/`。
+2. 在 `manifest.json` 中给新图片添加稳定 key。
+3. 在 `actions/` 下新增或修改动作 JSON。
+4. 如果是随机待机动作，把动作加到 `random_idle.json` 的 `actions` 数组并设置 `weight`。
+5. 运行 `npm run check`，再启动 `npm run dev` 预览。
 
-- `setPosition(position)`
-  - 动态修改位置、缩放和层级。
+## 本次验证
 
-- `ready`
-  - 资源预加载和首屏挂载完成后的 Promise。
-
-## 为什么这样改以后最好接入
-
-以后接入 `CS_Buddy` 时，不需要搬整个项目，只需要把下面这些带过去：
-
-- `src/pet/`
-- `assets/pet/`
-
-然后在 Vue 组件里这样包一层就行：
-
-```js
-import { onMounted, onUnmounted, ref } from "vue";
-import { createPet } from "@/mascot/createPet";
-
-const hostRef = ref(null);
-let pet;
-
-onMounted(async () => {
-  pet = createPet({ mount: hostRef.value });
-  await pet.ready;
-});
-
-onUnmounted(() => {
-  pet?.destroy();
-});
-```
-
-## 这次重构的核心收益
-
-- 现在继续做动画，不需要提前考虑 Vue、路由、Pinia 这些并站细节。
-- 以后要并入网站时，不再是“重写一遍桌宠”，而是“把内核搬进去，再包一层组件”。
-- 生命周期和样式边界已经提前打好了，后面接学习网站时风险会小很多。
-
-## 后续建议
-
-- 如果后面还会继续加表情、气泡、点击文案，建议优先做成配置项，不要重新写死在内核里。
-- 如果未来要让它在聊天页、测评页、个人中心页有不同位置，直接在外层组件里调用 `setPosition()` 即可。
-- 如果后续要让它承担引导学习、提示签到、显示进度，再在 `createPet()` 外扩展事件和数据接口会比较顺。
+- 已执行 `npm run check`，所有 JS 模块语法检查通过。

@@ -1,0 +1,22 @@
+{
+  "id": "wake",
+  "duration": 360,
+  "startPose": {
+    "mainState": "idle",
+    "sleepPending": false,
+    "eyes": { "left": "low", "right": "low" },
+    "mouth": "normal",
+    "flipperFrame": "frame2",
+    "headLift": true,
+    "tailBoost": true,
+    "cheeks": false,
+    "effect": "exclamation"
+  },
+  "finishPose": {
+    "eyes": { "left": "open", "right": "open" },
+    "flipperFrame": "frame1",
+    "headLift": false,
+    "tailBoost": false,
+    "effect": null
+  }
+}

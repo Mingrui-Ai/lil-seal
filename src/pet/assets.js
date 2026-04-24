@@ -1,82 +1,74 @@
-import { EYE_STATES, MOUTH_STATES, PAW_FRAMES } from "./constants.js";
-
 const DEFAULT_ASSET_BASE = new URL("../../assets/pet/", import.meta.url);
+const MANIFEST_FILE = "manifest.json";
 
-const FILES = Object.freeze({
-  shadow: "shadow.png",
-  body: "body.png",
-  tail: "tail.png",
-  tailCover: "tail_cover.png",
-  head: "head.png",
-  pawLeft1: "flipper_front_left_1.png",
-  pawLeft2: "flipper_front_left_2.png",
-  pawRight1: "flipper_front_right_1.png",
-  pawRight2: "flipper_front_right_2.png",
-  leftEyeOpen: "left_eye_open.png",
-  leftEyeLow: "left_eye_low.png",
-  leftEyeClose: "left_eye_close.png",
-  rightEyeOpen: "right_eye_open.png",
-  rightEyeLow: "right_eye_low.png",
-  rightEyeClose: "right_eye_close.png",
-  mouthNormal: "mouth_normal.png",
-  mouthTongue: "mouth_tongue.png",
-  zzz: "zzz.png",
-});
-
-export function createAssetMap(assetBase) {
-  const baseUrl = resolveBaseUrl(assetBase);
-  const resolve = (file) => new URL(file, baseUrl).href;
+export async function loadPetCatalog(options = {}) {
+  const baseUrl = resolveBaseUrl(options.assetBase);
+  const manifest = options.assetManifest ?? (await loadJson(new URL(MANIFEST_FILE, baseUrl)));
+  const assets = resolveAssetFiles(manifest.files, baseUrl);
+  const actions = await loadActionConfigs(manifest.actions, baseUrl);
 
   return {
-    shadow: resolve(FILES.shadow),
-    body: resolve(FILES.body),
-    tail: resolve(FILES.tail),
-    tailCover: resolve(FILES.tailCover),
-    head: resolve(FILES.head),
-    paws: {
-      left: {
-        [PAW_FRAMES.FRAME1]: resolve(FILES.pawLeft1),
-        [PAW_FRAMES.FRAME2]: resolve(FILES.pawLeft2),
-      },
-      right: {
-        [PAW_FRAMES.FRAME1]: resolve(FILES.pawRight1),
-        [PAW_FRAMES.FRAME2]: resolve(FILES.pawRight2),
-      },
-    },
-    eyes: {
-      left: {
-        [EYE_STATES.OPEN]: resolve(FILES.leftEyeOpen),
-        [EYE_STATES.LOW]: resolve(FILES.leftEyeLow),
-        [EYE_STATES.CLOSE]: resolve(FILES.leftEyeClose),
-      },
-      right: {
-        [EYE_STATES.OPEN]: resolve(FILES.rightEyeOpen),
-        [EYE_STATES.LOW]: resolve(FILES.rightEyeLow),
-        [EYE_STATES.CLOSE]: resolve(FILES.rightEyeClose),
-      },
-    },
-    mouths: {
-      [MOUTH_STATES.NORMAL]: resolve(FILES.mouthNormal),
-      [MOUTH_STATES.TONGUE]: resolve(FILES.mouthTongue),
-    },
-    zzz: resolve(FILES.zzz),
+    actions,
+    assets,
+    manifest,
   };
 }
 
 export function collectAssetPaths(assets) {
-  return [
-    assets.shadow,
-    assets.body,
-    assets.tail,
-    assets.tailCover,
-    assets.head,
-    ...Object.values(assets.paws.left),
-    ...Object.values(assets.paws.right),
-    ...Object.values(assets.eyes.left),
-    ...Object.values(assets.eyes.right),
-    ...Object.values(assets.mouths),
-    assets.zzz,
-  ];
+  return collectImagePaths(assets).filter((path) => !path.includes("/reference/"));
+}
+
+async function loadActionConfigs(actionFiles = {}, baseUrl) {
+  const entries = await Promise.all(
+    Object.entries(actionFiles).map(async ([name, file]) => [
+      name,
+      await loadJson(new URL(file, baseUrl)),
+    ])
+  );
+
+  return Object.fromEntries(entries);
+}
+
+async function loadJson(url) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load pet catalog: ${url.href}`);
+  }
+
+  return response.json();
+}
+
+function resolveAssetFiles(files = {}, baseUrl) {
+  return mapValues(files, (value) => {
+    if (typeof value === "string") {
+      return new URL(value, baseUrl).href;
+    }
+
+    return resolveAssetFiles(value, baseUrl);
+  });
+}
+
+function collectImagePaths(value) {
+  if (!value) {
+    return [];
+  }
+
+  if (typeof value === "string") {
+    return [value];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap(collectImagePaths);
+  }
+
+  return Object.values(value).flatMap(collectImagePaths);
+}
+
+function mapValues(source, mapper) {
+  return Object.fromEntries(
+    Object.entries(source).map(([key, value]) => [key, mapper(value, key)])
+  );
 }
 
 function resolveBaseUrl(assetBase) {
@@ -84,10 +76,21 @@ function resolveBaseUrl(assetBase) {
     return DEFAULT_ASSET_BASE;
   }
 
-  if (assetBase instanceof URL) {
-    return assetBase;
+  const base =
+    assetBase instanceof URL
+      ? assetBase
+      : new URL(
+          assetBase,
+          typeof document !== "undefined" ? document.baseURI : import.meta.url
+        );
+
+  return ensureDirectoryUrl(base);
+}
+
+function ensureDirectoryUrl(url) {
+  if (url.href.endsWith("/")) {
+    return url;
   }
 
-  const base = typeof document !== "undefined" ? document.baseURI : import.meta.url;
-  return new URL(assetBase, base);
+  return new URL(`${url.href}/`);
 }

@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "canvas": {
+    "width": 768,
+    "height": 768
+  },
+  "files": {
+    "core": {
+      "shadow": "core/shadow.png",
+      "body": "core/body.png",
+      "tail": "core/tail.png",
+      "tailCover": "core/tail_cover.png",
+      "head": "core/head.png"
+    },
+    "flippers": {
+      "left": {
+        "frame1": "flippers/left_01.png",
+        "frame2": "flippers/left_02.png"
+      },
+      "right": {
+        "frame1": "flippers/right_01.png",
+        "frame2": "flippers/right_02.png"
+      }
+    },
+    "eyes": {
+      "left": {
+        "open": "eyes/left_open.png",
+        "low": "eyes/left_low.png",
+        "close": "eyes/left_close.png"
+      },
+      "right": {
+        "open": "eyes/right_open.png",
+        "low": "eyes/right_low.png",
+        "close": "eyes/right_close.png"
+      },
+      "special": {
+        "love": "eyes/love.png",
+        "star": "eyes/star.png"
+      }
+    },
+    "mouths": {
+      "normal": "mouths/normal.png",
+      "tongue": "mouths/tongue.png",
+      "speak1": "mouths/speak_01.png",
+      "speak2": "mouths/speak_02.png",
+      "speak3": "mouths/speak_03.png"
+    },
+    "cheeks": {
+      "blushLeft": "cheeks/blush_left.png",
+      "blushRight": "cheeks/blush_right.png"
+    },
+    "effects": {
+      "zzz": "effects/zzz.png",
+      "exclamation": "effects/exclamation.png",
+      "ellipsis": "effects/ellipsis.png",
+      "questionMark": "effects/question_mark.png",
+      "thinking": "effects/thinking.png",
+      "drop": "effects/drop.png",
+      "chat": "effects/chat.png",
+      "cloud": "effects/cloud.png",
+      "wave1": "effects/wave_01.png",
+      "wave2": "effects/wave_02.png"
+    },
+    "reference": {
+      "all": "reference/all.png"
+    }
+  },
+  "actions": {
+    "randomIdle": "actions/random_idle.json",
+    "click": "actions/click.json",
+    "sleep": "actions/sleep.json",
+    "wake": "actions/wake.json",
+    "talk": "actions/talk.json"
+  }
+}

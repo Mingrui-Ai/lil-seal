@@ -1,0 +1,29 @@
+{
+  "id": "click",
+  "finishDelay": 920,
+  "steps": [
+    {
+      "delay": 0,
+      "pose": {
+        "eyes": { "left": "low", "right": "low" },
+        "mouth": "tongue",
+        "flipperFrame": "frame2",
+        "headLift": true,
+        "tailBoost": true,
+        "cheeks": true,
+        "effect": "chat"
+      }
+    },
+    { "delay": 120, "pose": { "flipperFrame": "frame1" } },
+    { "delay": 220, "pose": { "flipperFrame": "frame2" } },
+    {
+      "delay": 320,
+      "pose": {
+        "eyes": { "left": "open", "right": "open" },
+        "flipperFrame": "frame1",
+        "effect": null
+      }
+    },
+    { "delay": 620, "pose": { "cheeks": false } }
+  ]
+}
