@@ -12,6 +12,8 @@
 - 保留原有桌宠生命周期 API，并新增 `play(actionId)`，方便外部主动触发配置中的动作。
 - demo 测试页新增行为按钮，可直接触发说话、睡觉、醒来、挥手、星星眼、害羞。
 - 挥手素材改为 `poses/` 整姿势替换帧，播放时会暂时隐藏普通图层，避免叠图。
+- 说话动作改为持续模式：第一次点击开始循环嘴型和符号，再次点击停止；`chat` 气泡会在说话期间常驻。
+- 特效层拆成 `bubble` 和 `effect`，气泡和省略号/问号/感叹号可以同时显示。
 
 ## 当前目录结构
 
@@ -107,7 +109,7 @@ lil-seal/
 - `files.eyes.special`：爱心眼、星星眼这类整脸表情覆盖层。
 - `files.mouths`：普通嘴、吐舌头、说话帧。
 - `files.cheeks`：腮红覆盖层。
-- `files.effects`：气泡、问号、zzz 等整画布特效。
+- `files.effects`：气泡、问号、感叹号、zzz 等整画布特效。
 - `files.poses`：整姿势替换帧，例如挥手帧；播放时会暂时隐藏普通身体/表情图层。
 - `actions`：动作 JSON 的入口路径。
 
@@ -118,11 +120,12 @@ lil-seal/
 ```json
 {
   "id": "talk",
+  "loop": true,
   "finishDelay": 720,
   "steps": [
-    { "delay": 0, "pose": { "mouth": "speak1", "effect": "ellipsis" } },
+    { "delay": 0, "pose": { "mouth": "speak1", "bubble": "chat", "effect": "ellipsis" } },
     { "delay": 120, "pose": { "mouth": "speak2" } },
-    { "delay": 520, "pose": { "mouth": "normal", "effect": null } }
+    { "delay": 240, "pose": { "mouth": "speak3", "effect": "questionMark" } }
   ]
 }
 ```
@@ -138,7 +141,8 @@ lil-seal/
 - `tailBoost`：是否触发尾巴摆动样式。
 - `specialEyes`：`star`、`love`，或 `null` 清空。
 - `cheeks`：是否显示腮红。
-- `effect`：`chat`、`ellipsis`、`exclamation` 等，或 `null` 清空。
+- `bubble`：`chat`，或 `null` 清空；适合常驻气泡。
+- `effect`：`ellipsis`、`questionMark`、`exclamation` 等，或 `null` 清空。
 - `poseFrame`：`wave1`、`wave2` 等整姿势帧，播放时会隐藏普通图层。
 
 ## 现在可用的桌宠 API
@@ -158,9 +162,10 @@ const pet = createPet({
 });
 
 await pet.ready;
-pet.play("talk");
+pet.talk();
 pet.play("wave");
 pet.play("happy_star");
+pet.stopAction();
 pet.sleep();
 pet.wake();
 pet.hide();
@@ -176,6 +181,8 @@ pet.destroy();
 - `show()` / `hide()`：控制显示状态。
 - `setPosition(position)`：动态修改位置、缩放和层级。
 - `play(actionId)`：主动播放动作配置，例如 `talk`、`happy_star`、`love_blush`。
+- `talk()`：切换持续说话模式，返回当前是否正在说话。
+- `stopAction()`：停止当前持续动作并恢复待机。
 - `sleep()` / `wake()`：主动进入睡眠或唤醒，主要用于测试页和外部交互。
 - `ready`：资源清单、动作配置、图片预加载和首屏挂载完成后的 Promise。
 

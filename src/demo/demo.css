@@ -107,11 +107,18 @@
 }
 
 .demo-action:hover:not(:disabled),
-.demo-action:focus-visible {
+.demo-action:focus-visible,
+.demo-action--active {
   border-color: rgba(13, 141, 187, 0.42);
   background: rgba(13, 141, 187, 0.1);
   color: #096f96;
   transform: translateY(-1px);
+}
+
+.demo-action--active {
+  border-color: rgba(28, 105, 164, 0.48);
+  background: rgba(232, 246, 255, 0.95);
+  color: #0a5b82;
 }
 
 .demo-action:focus-visible {

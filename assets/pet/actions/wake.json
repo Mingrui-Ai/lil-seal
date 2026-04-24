@@ -10,6 +10,7 @@
     "headLift": true,
     "tailBoost": true,
     "cheeks": false,
+    "bubble": null,
     "effect": "exclamation",
     "poseFrame": null
   },
@@ -18,6 +19,7 @@
     "flipperFrame": "frame1",
     "headLift": false,
     "tailBoost": false,
+    "bubble": null,
     "effect": null,
     "poseFrame": null
   }

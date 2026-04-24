@@ -113,20 +113,24 @@
   z-index: 3;
 }
 
-.pet__effect {
+.pet__bubble {
   z-index: 7;
+}
+
+.pet__effect {
+  z-index: 8;
   transform-origin: center center;
   animation: effect-pop 0.7s ease-out both;
 }
 
 .pet__zzz {
-  z-index: 8;
+  z-index: 9;
   transform-origin: center center;
   animation: zzz-fade 3.4s ease-in-out infinite;
 }
 
 .pet__pose {
-  z-index: 9;
+  z-index: 10;
 }
 
 .pet[data-main-state="idle"] .pet__scene {

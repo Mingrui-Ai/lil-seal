@@ -36,12 +36,21 @@ function bindActionButtons(pet, buttons, status) {
       const command = button.dataset.command;
 
       if (action) {
+        if (action === "talk" && typeof pet.talk === "function") {
+          const active = pet.talk();
+          setButtonActive(button, active);
+          setStatus(status, active ? "说话中：再次点击停止" : "已停止说话");
+          return;
+        }
+
+        resetToggleButtons(buttons);
         const played = pet.play(action);
         setStatus(status, played ? `已触发：${ACTION_LABELS[action]}` : "当前动作未就绪");
         return;
       }
 
       if (command && typeof pet[command] === "function") {
+        resetToggleButtons(buttons);
         pet[command]();
         setStatus(status, `已触发：${COMMAND_LABELS[command]}`);
       }
@@ -54,6 +63,17 @@ function bindActionButtons(pet, buttons, status) {
     });
     setStatus(status, "已就绪");
   });
+}
+
+function resetToggleButtons(buttons) {
+  buttons.forEach((button) => {
+    setButtonActive(button, false);
+  });
+}
+
+function setButtonActive(button, active) {
+  button.classList.toggle("demo-action--active", active);
+  button.setAttribute("aria-pressed", String(active));
 }
 
 function setStatus(target, text) {

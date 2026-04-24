@@ -29,6 +29,7 @@ export function createPetMarkup(assets, labels) {
               <img class="pet__layer pet__mouth" data-part="mouth" src="${assets.mouths.normal}" alt="" />
             </span>
           </span>
+          <img class="pet__layer pet__bubble" data-part="bubble" src="${assets.effects.chat}" alt="" hidden />
           <img class="pet__layer pet__effect" data-part="effect" src="${assets.effects.exclamation}" alt="" hidden />
           <img class="pet__layer pet__zzz" data-part="zzz" src="${assets.effects.zzz}" alt="" hidden />
           <img class="pet__layer pet__pose" data-part="pose" src="${assets.poses.wave1}" alt="" hidden />

@@ -10,7 +10,7 @@ assets/pet/
   eyes/                Left/right eye states and full-face special eye overlays.
   mouths/              Normal, tongue, and speaking mouth frames.
   cheeks/              Blush overlays.
-  effects/             Full-canvas emotion, bubble, and sleep effects.
+  effects/             Full-canvas chat bubbles, symbols, and sleep effects.
   poses/               Full-canvas replacement poses that hide normal layers.
   actions/             JSON action timelines consumed by the pet runtime.
   reference/           Non-runtime reference exports.
@@ -24,3 +24,4 @@ Naming rules:
 - Number animation frames with two digits: `left_01.png`, `speak_02.png`.
 - Keep new runtime layers on the shared 768 x 768 canvas.
 - Use `poses/` for full-body frames such as wave poses that should temporarily hide normal layered parts.
+- Use `bubble` for persistent chat bubbles and `effect` for the symbol above them.

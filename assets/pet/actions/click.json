@@ -11,7 +11,7 @@
         "headLift": true,
         "tailBoost": true,
         "cheeks": true,
-        "effect": "chat"
+        "bubble": "chat"
       }
     },
     { "delay": 120, "pose": { "flipperFrame": "frame1" } },
@@ -21,7 +21,7 @@
       "pose": {
         "eyes": { "left": "open", "right": "open" },
         "flipperFrame": "frame1",
-        "effect": null
+        "bubble": null
       }
     },
     { "delay": 620, "pose": { "cheeks": false } }

@@ -37,6 +37,7 @@ function createPetState() {
     tailBoostActive: false,
     specialEyes: null,
     cheeksVisible: false,
+    bubble: null,
     effect: null,
     poseFrame: null,
   };
@@ -74,6 +75,7 @@ function createDomRefs() {
     cheekLeft: null,
     cheekRight: null,
     mouth: null,
+    bubble: null,
     effect: null,
     zzz: null,
     pose: null,
@@ -102,6 +104,7 @@ export function createPet(options = {}) {
   let listeners = [];
   let assets = null;
   let actions = {};
+  let activeLoopAction = null;
   let readyPromise;
 
   const controller = {
@@ -122,12 +125,20 @@ export function createPet(options = {}) {
     hide() {
       settings.hidden = true;
       resetFollowTargets();
+      stopLoopingAction({ render: false, schedule: false });
       clearRandomTimer();
       applyVisibility();
       return controller;
     },
     play(actionId) {
       return playNamedAction(actionId);
+    },
+    talk() {
+      return toggleLoopingAction("talk");
+    },
+    stopAction() {
+      stopLoopingAction();
+      return controller;
     },
     sleep() {
       resetInteractionClock();
@@ -179,6 +190,7 @@ export function createPet(options = {}) {
     dom = createDomRefs();
     assets = null;
     actions = {};
+    activeLoopAction = null;
 
     dom.root = document.createElement("div");
     dom.root.className = "pet-host";
@@ -231,6 +243,7 @@ export function createPet(options = {}) {
     dom.cheekLeft = dom.root.querySelector('[data-part="cheek-left"]');
     dom.cheekRight = dom.root.querySelector('[data-part="cheek-right"]');
     dom.mouth = dom.root.querySelector('[data-part="mouth"]');
+    dom.bubble = dom.root.querySelector('[data-part="bubble"]');
     dom.effect = dom.root.querySelector('[data-part="effect"]');
     dom.zzz = dom.root.querySelector('[data-part="zzz"]');
     dom.pose = dom.root.querySelector('[data-part="pose"]');
@@ -275,6 +288,7 @@ export function createPet(options = {}) {
       ? assets.eyes.special?.[petState.specialEyes]
       : null;
     const effectSrc = petState.effect ? assets.effects?.[petState.effect] : null;
+    const bubbleSrc = petState.bubble ? assets.effects?.[petState.bubble] : null;
     const poseSrc = petState.poseFrame ? assets.poses?.[petState.poseFrame] : null;
     const poseActive = Boolean(poseSrc);
 
@@ -290,6 +304,7 @@ export function createPet(options = {}) {
     setImage(dom.mouth, assets.mouths[petState.mouthState] ?? assets.mouths.normal);
     setImage(dom.cheekLeft, assets.cheeks.blushLeft, !petState.cheeksVisible);
     setImage(dom.cheekRight, assets.cheeks.blushRight, !petState.cheeksVisible);
+    setImage(dom.bubble, bubbleSrc, poseActive || !bubbleSrc);
     setImage(dom.effect, effectSrc, poseActive || !effectSrc);
     setImage(dom.pose, poseSrc, !poseActive);
 
@@ -330,6 +345,7 @@ export function createPet(options = {}) {
     petState.tailBoostActive = false;
     petState.specialEyes = null;
     petState.cheeksVisible = false;
+    petState.bubble = null;
     petState.effect = null;
     petState.poseFrame = null;
   }
@@ -374,6 +390,10 @@ export function createPet(options = {}) {
 
     if (hasOwn(pose, "effect")) {
       petState.effect = pose.effect;
+    }
+
+    if (hasOwn(pose, "bubble")) {
+      petState.bubble = pose.bubble;
     }
 
     if (hasOwn(pose, "poseFrame")) {
@@ -522,6 +542,7 @@ export function createPet(options = {}) {
   }
 
   function prepareIdleAction() {
+    activeLoopAction = null;
     clearRandomTimer();
     clearActionTimers();
     petState.isBusy = true;
@@ -536,11 +557,12 @@ export function createPet(options = {}) {
   }
 
   function playPoseSequence(action, onFinish) {
+    runPoseSteps(action);
+    scheduleAction(onFinish, getActionDuration(action));
+  }
+
+  function runPoseSteps(action) {
     const steps = Array.isArray(action?.steps) ? action.steps : [];
-    const latestDelay = steps.reduce(
-      (latest, step) => Math.max(latest, normalizeDelay(step.delay)),
-      0
-    );
 
     steps.forEach((step) => {
       const runStep = () => {
@@ -556,8 +578,16 @@ export function createPet(options = {}) {
 
       scheduleAction(runStep, delay);
     });
+  }
 
-    scheduleAction(onFinish, normalizeDelay(action?.finishDelay, latestDelay + 80));
+  function getActionDuration(action) {
+    const steps = Array.isArray(action?.steps) ? action.steps : [];
+    const latestDelay = steps.reduce(
+      (latest, step) => Math.max(latest, normalizeDelay(step.delay)),
+      0
+    );
+
+    return normalizeDelay(action?.finishDelay, latestDelay + 80);
   }
 
   function playConfiguredIdleAction(action) {
@@ -566,7 +596,7 @@ export function createPet(options = {}) {
   }
 
   function playNamedAction(actionId) {
-    if (!actionId || settings.hidden || petState.isBusy || !assets) {
+    if (!actionId || settings.hidden || !assets) {
       return false;
     }
 
@@ -576,9 +606,76 @@ export function createPet(options = {}) {
       return false;
     }
 
+    if (action.loop) {
+      return toggleLoopingAction(actionId);
+    }
+
+    if (petState.isBusy && !activeLoopAction) {
+      return false;
+    }
+
     resetInteractionClock();
     playConfiguredIdleAction(action);
     return true;
+  }
+
+  function toggleLoopingAction(actionId) {
+    if (activeLoopAction === actionId) {
+      stopLoopingAction();
+      return false;
+    }
+
+    return startLoopingAction(actionId);
+  }
+
+  function startLoopingAction(actionId) {
+    const action = findAction(actionId);
+
+    if (!action || !assets || settings.hidden) {
+      return false;
+    }
+
+    activeLoopAction = actionId;
+    clearRandomTimer();
+    clearActionTimers();
+    setIdlePose();
+    petState.isBusy = true;
+    resetInteractionClock();
+    playLoopCycle(actionId, action);
+    return true;
+  }
+
+  function stopLoopingAction(options = {}) {
+    if (!activeLoopAction) {
+      return false;
+    }
+
+    const { render = true, schedule = true } = options;
+    activeLoopAction = null;
+    clearActionTimers();
+    setIdlePose();
+    petState.isBusy = false;
+
+    if (render) {
+      renderPet();
+    }
+
+    if (schedule) {
+      scheduleRandomAction();
+    }
+
+    return true;
+  }
+
+  function playLoopCycle(actionId, action) {
+    if (activeLoopAction !== actionId) {
+      return;
+    }
+
+    runPoseSteps(action);
+    scheduleAction(() => {
+      playLoopCycle(actionId, action);
+    }, getActionDuration(action));
   }
 
   function findAction(actionId) {
@@ -647,6 +744,7 @@ export function createPet(options = {}) {
 
     clearRandomTimer();
     clearActionTimers();
+    activeLoopAction = null;
 
     petState.isBusy = true;
     petState.sleepPending = true;
@@ -665,6 +763,7 @@ export function createPet(options = {}) {
   function wakeUp() {
     clearRandomTimer();
     clearActionTimers();
+    activeLoopAction = null;
 
     petState.isBusy = true;
     applyPose(actions.wake?.startPose ?? createDefaultWakeStartPose());
@@ -680,6 +779,10 @@ export function createPet(options = {}) {
 
   function handleClick() {
     resetInteractionClock();
+
+    if (activeLoopAction) {
+      return;
+    }
 
     if (petState.mainState === MAIN_STATES.SLEEP || petState.sleepPending) {
       wakeUp();
@@ -753,6 +856,7 @@ export function createPet(options = {}) {
     followState = createFollowState();
     assets = null;
     actions = {};
+    activeLoopAction = null;
   }
 }
 
@@ -766,6 +870,7 @@ function createDefaultSleepPendingPose() {
     tailBoost: false,
     specialEyes: null,
     cheeks: false,
+    bubble: null,
     effect: null,
     poseFrame: null,
   };
@@ -788,6 +893,7 @@ function createDefaultWakeStartPose() {
     flipperFrame: FLIPPER_FRAMES.FRAME2,
     headLift: true,
     tailBoost: true,
+    bubble: null,
     effect: "exclamation",
     poseFrame: null,
   };
@@ -799,6 +905,7 @@ function createDefaultWakeFinishPose() {
     flipperFrame: FLIPPER_FRAMES.FRAME1,
     headLift: false,
     tailBoost: false,
+    bubble: null,
     effect: null,
     poseFrame: null,
   };

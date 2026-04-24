@@ -10,6 +10,7 @@
     "tailBoost": false,
     "specialEyes": null,
     "cheeks": false,
+    "bubble": null,
     "effect": null,
     "poseFrame": null
   },
@@ -23,6 +24,7 @@
     "tailBoost": false,
     "specialEyes": null,
     "cheeks": false,
+    "bubble": null,
     "effect": null,
     "poseFrame": null
   }
