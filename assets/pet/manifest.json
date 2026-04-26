@@ -73,6 +73,7 @@
     "sleep": "actions/sleep.json",
     "wake": "actions/wake.json",
     "wave": "actions/wave.json",
+    "laugh": "actions/laugh.json",
     "talk": "actions/talk.json"
   }
 }

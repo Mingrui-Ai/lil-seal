@@ -2,6 +2,7 @@ import { createPet } from "../pet/createPet.js";
 
 const ACTION_LABELS = {
   happy_star: "星星眼",
+  laugh: "大笑",
   love_blush: "害羞",
   talk: "说话",
   wave: "挥手",

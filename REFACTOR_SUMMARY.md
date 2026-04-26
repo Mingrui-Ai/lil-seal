@@ -10,7 +10,7 @@
 - 重构 `src/pet/assets.js`，运行时从 `manifest.json` 加载资源和动作配置，再统一解析为可用 URL。
 - 重构 `src/pet/createPet.js`，使用动作 JSON 的时间线执行姿态变化，新增特殊眼睛、腮红、特效层支持。
 - 保留原有桌宠生命周期 API，并新增 `play(actionId)`，方便外部主动触发配置中的动作。
-- demo 测试页新增行为按钮，可直接触发说话、睡觉、醒来、挥手、星星眼、害羞。
+- demo 测试页新增行为按钮，可直接触发说话、睡觉、醒来、挥手、大笑、星星眼、害羞。
 - 挥手素材改为 `poses/` 整姿势替换帧，播放时会暂时隐藏普通图层，避免叠图。
 - 说话动作改为持续模式：第一次点击开始循环嘴型和符号，再次点击停止；`chat` 气泡会在说话期间常驻。
 - 特效层拆成 `bubble` 和 `effect`，气泡和省略号/问号/感叹号可以同时显示。
@@ -31,6 +31,7 @@ lil-seal/
         sleep.json
         talk.json
         wave.json
+        laugh.json
         wake.json
       cheeks/
         blush_left.png
