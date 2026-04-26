@@ -26,12 +26,14 @@
       "left": {
         "open": "eyes/left_open.png",
         "low": "eyes/left_low.png",
-        "close": "eyes/left_close.png"
+        "close": "eyes/left_close.png",
+        "upturn": "eyes/left_upturn.png"
       },
       "right": {
         "open": "eyes/right_open.png",
         "low": "eyes/right_low.png",
-        "close": "eyes/right_close.png"
+        "close": "eyes/right_close.png",
+        "upturn": "eyes/right_upturn.png"
       },
       "special": {
         "love": "eyes/love.png",

@@ -7,7 +7,7 @@ assets/pet/
   manifest.json        Runtime asset and action index.
   core/                Body, head, tail, shadow, and cover layers.
   flippers/            Left and right flipper animation frames.
-  eyes/                Left/right eye states and full-face special eye overlays.
+  eyes/                Left/right eye states, including upturn laugh eyes, and full-face special eye overlays.
   mouths/              Normal, tongue, and speaking mouth frames.
   cheeks/              Blush overlays.
   effects/             Full-canvas chat bubbles, symbols, and sleep effects.

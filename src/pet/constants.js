@@ -7,6 +7,7 @@ export const EYE_STATES = {
   OPEN: "open",
   LOW: "low",
   CLOSE: "close",
+  UPTURN: "upturn",
 };
 
 export const MOUTH_STATES = {
