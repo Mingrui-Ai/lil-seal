@@ -19,6 +19,62 @@ const DEFAULT_LABELS = Object.freeze({
 });
 
 const DEFAULT_RANDOM_DELAY = Object.freeze({ min: 3200, max: 6800 });
+const SPEECH_PUNCTUATION = new Set([
+  ",",
+  ".",
+  "!",
+  "?",
+  ";",
+  ":",
+  "，",
+  "。",
+  "！",
+  "？",
+  "；",
+  "：",
+  "、",
+]);
+const SPEECH_PUNCTUATION_PAUSE = 300;
+const SPEECH_PROFILES = Object.freeze({
+  normal: {
+    min: 80,
+    max: 150,
+    frames: [
+      MOUTH_STATES.NORMAL,
+      MOUTH_STATES.SPEAK1,
+      MOUTH_STATES.SPEAK2,
+      MOUTH_STATES.SPEAK1,
+      MOUTH_STATES.NORMAL,
+    ],
+  },
+  excited: {
+    min: 60,
+    max: 110,
+    frames: [
+      MOUTH_STATES.SPEAK1,
+      MOUTH_STATES.SPEAK2,
+      MOUTH_STATES.SPEAK1,
+      MOUTH_STATES.SPEAK2,
+      MOUTH_STATES.NORMAL,
+    ],
+  },
+  soft: {
+    min: 140,
+    max: 230,
+    frames: [
+      MOUTH_STATES.NORMAL,
+      MOUTH_STATES.SPEAK1,
+      MOUTH_STATES.NORMAL,
+      MOUTH_STATES.SPEAK1,
+      MOUTH_STATES.SPEAK2,
+    ],
+  },
+  surprised: {
+    min: 220,
+    max: 320,
+    frames: [MOUTH_STATES.SPEAK2],
+  },
+});
 
 function createPetState() {
   return {
@@ -40,6 +96,21 @@ function createPetState() {
     bubble: null,
     effect: null,
     poseFrame: null,
+    voicePulseActive: false,
+  };
+}
+
+function createSpeechState() {
+  return {
+    active: false,
+    continuous: true,
+    displayText: "",
+    frameIndex: 0,
+    mode: "normal",
+    onFinish: null,
+    onText: null,
+    text: "",
+    textIndex: 0,
   };
 }
 
@@ -105,6 +176,7 @@ export function createPet(options = {}) {
   let assets = null;
   let actions = {};
   let activeLoopAction = null;
+  let speechState = createSpeechState();
   let readyPromise;
 
   const controller = {
@@ -133,8 +205,15 @@ export function createPet(options = {}) {
     play(actionId) {
       return playNamedAction(actionId);
     },
-    talk() {
-      return toggleLoopingAction("talk");
+    talk(options = {}) {
+      return toggleLoopingAction("talk", options);
+    },
+    say(text, options = {}) {
+      return startSpeech({
+        ...options,
+        continuous: false,
+        text,
+      });
     },
     stopAction() {
       stopLoopingAction();
@@ -191,6 +270,7 @@ export function createPet(options = {}) {
     assets = null;
     actions = {};
     activeLoopAction = null;
+    speechState = createSpeechState();
 
     dom.root = document.createElement("div");
     dom.root.className = "pet-host";
@@ -311,6 +391,8 @@ export function createPet(options = {}) {
     dom.pet.classList.toggle("pet--head-lift", petState.headLiftActive);
     dom.pet.classList.toggle("pet--tail-boost", petState.tailBoostActive);
     dom.pet.classList.toggle("pet--busy", petState.isBusy);
+    dom.pet.classList.toggle("pet--talking", speechState.active);
+    dom.pet.classList.toggle("pet--voice-pop", petState.voicePulseActive);
     dom.pet.setAttribute(
       "aria-label",
       sleeping ? settings.labels.sleep : settings.labels.idle
@@ -351,6 +433,7 @@ export function createPet(options = {}) {
     petState.bubble = null;
     petState.effect = null;
     petState.poseFrame = null;
+    petState.voicePulseActive = false;
   }
 
   function applyPose(pose = {}) {
@@ -622,20 +705,27 @@ export function createPet(options = {}) {
     return true;
   }
 
-  function toggleLoopingAction(actionId) {
+  function toggleLoopingAction(actionId, options = {}) {
     if (activeLoopAction === actionId) {
       stopLoopingAction();
       return false;
     }
 
-    return startLoopingAction(actionId);
+    return startLoopingAction(actionId, options);
   }
 
-  function startLoopingAction(actionId) {
+  function startLoopingAction(actionId, options = {}) {
     const action = findAction(actionId);
 
     if (!action || !assets || settings.hidden) {
       return false;
+    }
+
+    if (actionId === "talk") {
+      return startSpeech({
+        ...options,
+        continuous: true,
+      });
     }
 
     activeLoopAction = actionId;
@@ -655,6 +745,7 @@ export function createPet(options = {}) {
 
     const { render = true, schedule = true } = options;
     activeLoopAction = null;
+    speechState = createSpeechState();
     clearActionTimers();
     setIdlePose();
     petState.isBusy = false;
@@ -679,6 +770,112 @@ export function createPet(options = {}) {
     scheduleAction(() => {
       playLoopCycle(actionId, action);
     }, getActionDuration(action));
+  }
+
+  function startSpeech(options = {}) {
+    if (!assets || settings.hidden) {
+      return false;
+    }
+
+    const profile = getSpeechProfile(options.mode);
+    activeLoopAction = "talk";
+    speechState = {
+      ...createSpeechState(),
+      active: true,
+      continuous: options.continuous !== false,
+      mode: profile.name,
+      onFinish: typeof options.onFinish === "function" ? options.onFinish : null,
+      onText: typeof options.onText === "function" ? options.onText : null,
+      text: typeof options.text === "string" ? options.text : "",
+    };
+
+    clearRandomTimer();
+    clearActionTimers();
+    setIdlePose();
+    petState.isBusy = true;
+    petState.bubble = "chat";
+    petState.effect = "ellipsis";
+    resetInteractionClock();
+    renderPet();
+    scheduleNextSpeechStep();
+    return true;
+  }
+
+  function scheduleNextSpeechStep() {
+    if (!speechState.active || activeLoopAction !== "talk") {
+      return;
+    }
+
+    const profile = getSpeechProfile(speechState.mode);
+
+    if (!speechState.continuous && speechState.textIndex >= speechState.text.length) {
+      finishSpeech();
+      return;
+    }
+
+    const char = speechState.continuous
+      ? ""
+      : speechState.text[speechState.textIndex] ?? "";
+
+    if (char) {
+      speechState.displayText += char;
+      speechState.textIndex += 1;
+
+      if (speechState.onText) {
+        speechState.onText(speechState.displayText, char, speechState.textIndex);
+      }
+    }
+
+    if (char && SPEECH_PUNCTUATION.has(char)) {
+      setSpeechMouth(MOUTH_STATES.NORMAL);
+      scheduleAction(scheduleNextSpeechStep, SPEECH_PUNCTUATION_PAUSE);
+      return;
+    }
+
+    const mouth = getNextSpeechMouth(profile);
+    setSpeechMouth(mouth);
+    scheduleAction(scheduleNextSpeechStep, randomBetween(profile.min, profile.max));
+  }
+
+  function finishSpeech() {
+    const onFinish = speechState.onFinish;
+    activeLoopAction = null;
+    speechState = createSpeechState();
+    clearActionTimers();
+    setIdlePose();
+    petState.isBusy = false;
+    renderPet();
+    scheduleRandomAction();
+
+    if (onFinish) {
+      onFinish();
+    }
+  }
+
+  function setSpeechMouth(mouth) {
+    petState.mouthState = mouth;
+    petState.bubble = "chat";
+    petState.effect = "ellipsis";
+    petState.voicePulseActive = mouth !== MOUTH_STATES.NORMAL;
+    renderPet();
+
+    if (petState.voicePulseActive) {
+      scheduleAction(() => {
+        if (speechState.active) {
+          petState.voicePulseActive = false;
+          renderPet();
+        }
+      }, 120);
+    }
+  }
+
+  function getNextSpeechMouth(profile) {
+    const frames = profile.frames.length
+      ? profile.frames
+      : SPEECH_PROFILES.normal.frames;
+    const frame = frames[speechState.frameIndex % frames.length];
+    speechState.frameIndex += 1;
+    return frame;
   }
 
   function findAction(actionId) {
@@ -748,6 +945,7 @@ export function createPet(options = {}) {
     clearRandomTimer();
     clearActionTimers();
     activeLoopAction = null;
+    speechState = createSpeechState();
 
     petState.isBusy = true;
     petState.sleepPending = true;
@@ -767,6 +965,7 @@ export function createPet(options = {}) {
     clearRandomTimer();
     clearActionTimers();
     activeLoopAction = null;
+    speechState = createSpeechState();
 
     petState.isBusy = true;
     applyPose(actions.wake?.startPose ?? createDefaultWakeStartPose());
@@ -860,6 +1059,7 @@ export function createPet(options = {}) {
     assets = null;
     actions = {};
     activeLoopAction = null;
+    speechState = createSpeechState();
   }
 }
 
@@ -980,6 +1180,16 @@ function getDelayRange(range = DEFAULT_RANDOM_DELAY) {
   return {
     min: normalizeNumber(range.min, DEFAULT_RANDOM_DELAY.min),
     max: normalizeNumber(range.max, DEFAULT_RANDOM_DELAY.max),
+  };
+}
+
+function getSpeechProfile(mode) {
+  const name =
+    typeof mode === "string" && SPEECH_PROFILES[mode] ? mode : "normal";
+
+  return {
+    ...SPEECH_PROFILES[name],
+    name,
   };
 }
 

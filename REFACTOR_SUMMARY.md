@@ -14,6 +14,8 @@
 - 挥手素材改为 `poses/` 整姿势替换帧，播放时会暂时隐藏普通图层，避免叠图。
 - 说话动作改为持续模式：第一次点击开始循环嘴型和符号，再次点击停止；`chat` 气泡会在说话期间常驻。
 - 特效层拆成 `bubble` 和 `effect`，气泡和省略号/问号/感叹号可以同时显示。
+- 新增运行时说话引擎：支持 80ms 到 150ms 的随机音节节奏、标点停顿、打字机同步和语气模式。
+- 说话时头部会有轻微发声微动，对话气泡也会轻微浮动。
 
 ## 当前目录结构
 
@@ -165,6 +167,12 @@ const pet = createPet({
 
 await pet.ready;
 pet.talk();
+pet.say("咕噜，今天也要认真学习！", {
+  mode: "normal",
+  onText: (text) => {
+    console.log(text);
+  },
+});
 pet.play("wave");
 pet.play("happy_star");
 pet.stopAction();
@@ -183,7 +191,8 @@ pet.destroy();
 - `show()` / `hide()`：控制显示状态。
 - `setPosition(position)`：动态修改位置、缩放和层级。
 - `play(actionId)`：主动播放动作配置，例如 `talk`、`happy_star`、`love_blush`。
-- `talk()`：切换持续说话模式，返回当前是否正在说话。
+- `talk(options)`：切换持续说话模式，返回当前是否正在说话；`options.mode` 支持 `normal`、`excited`、`soft`、`surprised`。
+- `say(text, options)`：按文字打字机节奏说话，每输出一个字切换一次嘴型；`onText` 可同步外部 Vue/页面文本。
 - `stopAction()`：停止当前持续动作并恢复待机。
 - `sleep()` / `wake()`：主动进入睡眠或唤醒，主要用于测试页和外部交互。
 - `ready`：资源清单、动作配置、图片预加载和首屏挂载完成后的 Promise。

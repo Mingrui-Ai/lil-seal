@@ -89,6 +89,40 @@
   gap: 10px;
 }
 
+.demo-speech {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.4fr) minmax(180px, 1fr) minmax(112px, auto);
+  gap: 10px;
+  margin-top: 14px;
+  align-items: end;
+}
+
+.demo-field {
+  display: grid;
+  gap: 6px;
+  color: #55778a;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.demo-field select,
+.demo-field textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid rgba(73, 122, 145, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #1d3f53;
+  font: inherit;
+  font-weight: 500;
+}
+
+.demo-field textarea {
+  resize: vertical;
+  line-height: 1.55;
+}
+
 .demo-action {
   min-height: 42px;
   padding: 0 16px;
@@ -137,6 +171,14 @@
   font-weight: 600;
 }
 
+.demo-speech-output {
+  min-height: 1.7em;
+  margin: 14px 0 0;
+  color: #1d3f53;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
 @media (max-width: 700px) {
   .demo-main {
     padding-bottom: 220px;
@@ -145,5 +187,9 @@
   .demo-panel,
   .demo-controls {
     width: 100%;
+  }
+
+  .demo-speech {
+    grid-template-columns: 1fr;
   }
 }

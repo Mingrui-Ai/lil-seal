@@ -31,6 +31,23 @@
           <button class="demo-action" type="button" data-action="happy_star" disabled>星星眼</button>
           <button class="demo-action" type="button" data-action="love_blush" disabled>害羞</button>
         </div>
+        <div class="demo-speech">
+          <label class="demo-field">
+            <span>语气</span>
+            <select data-speech-mode>
+              <option value="normal">普通</option>
+              <option value="excited">兴奋</option>
+              <option value="soft">轻声</option>
+              <option value="surprised">惊讶</option>
+            </select>
+          </label>
+          <label class="demo-field demo-field--wide">
+            <span>文本</span>
+            <textarea data-speech-text rows="2">咕噜，今天也要认真学习！</textarea>
+          </label>
+          <button class="demo-action" type="button" data-command="say" disabled>文本说话</button>
+        </div>
+        <p class="demo-speech-output" data-speech-output></p>
         <p class="demo-status" data-status>准备中</p>
       </section>
     </main>

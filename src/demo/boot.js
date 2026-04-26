@@ -21,24 +21,36 @@ function startDemo() {
 
   const actionButtons = Array.from(document.querySelectorAll(".demo-action"));
   const status = document.querySelector("[data-status]");
+  const speechMode = document.querySelector("[data-speech-mode]");
+  const speechOutput = document.querySelector("[data-speech-output]");
+  const speechText = document.querySelector("[data-speech-text]");
   const pet = createPet({
     mount,
   });
 
-  bindActionButtons(pet, actionButtons, status);
+  bindActionButtons(pet, actionButtons, {
+    speechMode,
+    speechOutput,
+    speechText,
+    status,
+  });
   window.demoPet = pet;
 }
 
-function bindActionButtons(pet, buttons, status) {
+function bindActionButtons(pet, buttons, refs) {
+  const { speechMode, speechOutput, speechText, status } = refs;
+
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
       const action = button.dataset.action;
       const command = button.dataset.command;
+      const mode = speechMode?.value ?? "normal";
 
       if (action) {
         if (action === "talk" && typeof pet.talk === "function") {
-          const active = pet.talk();
+          const active = pet.talk({ mode });
           setButtonActive(button, active);
+          setText(speechOutput, active ? "..." : "");
           setStatus(status, active ? "说话中：再次点击停止" : "已停止说话");
           return;
         }
@@ -49,8 +61,21 @@ function bindActionButtons(pet, buttons, status) {
         return;
       }
 
+      if (command === "say" && typeof pet.say === "function") {
+        resetToggleButtons(buttons);
+        const text = speechText?.value?.trim() || "咕噜，今天也要认真学习！";
+        pet.say(text, {
+          mode,
+          onFinish: () => setStatus(status, "文本说完了"),
+          onText: (nextText) => setText(speechOutput, nextText),
+        });
+        setStatus(status, "文本说话中");
+        return;
+      }
+
       if (command && typeof pet[command] === "function") {
         resetToggleButtons(buttons);
+        setText(speechOutput, "");
         pet[command]();
         setStatus(status, `已触发：${COMMAND_LABELS[command]}`);
       }
@@ -77,6 +102,10 @@ function setButtonActive(button, active) {
 }
 
 function setStatus(target, text) {
+  setText(target, text);
+}
+
+function setText(target, text) {
   if (target) {
     target.textContent = text;
   }
