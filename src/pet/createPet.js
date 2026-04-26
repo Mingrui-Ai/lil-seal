@@ -215,7 +215,7 @@ export function createPet(options = {}) {
       return playNamedAction(actionId);
     },
     talk(options = {}) {
-      return toggleLoopingAction("talk", options);
+      return toggleSpeech(options);
     },
     say(text, options = {}) {
       return startSpeech({
@@ -732,6 +732,18 @@ export function createPet(options = {}) {
     return startLoopingAction(actionId, options);
   }
 
+  function toggleSpeech(options = {}) {
+    if (activeLoopAction === "talk") {
+      stopLoopingAction();
+      return false;
+    }
+
+    return startSpeech({
+      ...options,
+      continuous: options.continuous === true,
+    });
+  }
+
   function startLoopingAction(actionId, options = {}) {
     const action = findAction(actionId);
 
@@ -742,7 +754,7 @@ export function createPet(options = {}) {
     if (actionId === "talk") {
       return startSpeech({
         ...options,
-        continuous: true,
+        continuous: options.continuous === true,
       });
     }
 

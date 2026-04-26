@@ -48,10 +48,19 @@ function bindActionButtons(pet, buttons, refs) {
 
       if (action) {
         if (action === "talk" && typeof pet.talk === "function") {
-          const active = pet.talk({ mode });
+          const text = speechText?.value?.trim() || "咕噜，今天也要认真学习！";
+          const active = pet.talk({
+            mode,
+            text,
+            onFinish: () => {
+              setButtonActive(button, false);
+              setStatus(status, "文本说完了");
+            },
+            onText: (nextText) => setText(speechOutput, nextText),
+          });
           setButtonActive(button, active);
-          setText(speechOutput, active ? "..." : "");
-          setStatus(status, active ? "说话中：再次点击停止" : "已停止说话");
+          setText(speechOutput, active ? "" : speechOutput?.textContent ?? "");
+          setStatus(status, active ? "说话中" : "已停止说话");
           return;
         }
 
@@ -64,12 +73,16 @@ function bindActionButtons(pet, buttons, refs) {
       if (command === "say" && typeof pet.say === "function") {
         resetToggleButtons(buttons);
         const text = speechText?.value?.trim() || "咕噜，今天也要认真学习！";
-        pet.say(text, {
+        const active = pet.say(text, {
           mode,
-          onFinish: () => setStatus(status, "文本说完了"),
+          onFinish: () => {
+            setButtonActive(button, false);
+            setStatus(status, "文本说完了");
+          },
           onText: (nextText) => setText(speechOutput, nextText),
         });
-        setStatus(status, "文本说话中");
+        setButtonActive(button, active);
+        setStatus(status, active ? "文本说话中" : "当前动作未就绪");
         return;
       }
 
