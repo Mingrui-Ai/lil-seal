@@ -31,7 +31,8 @@ export const SLEEP_BUBBLE_ENTER_DURATION = 720;
 export const SLEEP_BUBBLE_POP_FRAME_INTERVAL = 80;
 export const SLEEP_BUBBLE_POP_DURATION = 440;
 export const SLEEP_RECOVERY_DELAY = 1500;
-export const EYE_FOLLOW_LIMITS = { x: 2.1, y: 1.35 };
+export const EYE_FOLLOW_LIMITS = { x: 3, y: 2 };
+export const EYE_FOLLOW_ACTIVATION_PADDING = 38;
 export const HEAD_FOLLOW_LIMITS = { x: 1, y: 1, rotate: 1 };
 export const FOLLOW_LERP = 0.16;
 

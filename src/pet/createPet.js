@@ -1,5 +1,6 @@
 import {
   DEFAULT_POSITION,
+  EYE_FOLLOW_ACTIVATION_PADDING,
   EYE_FOLLOW_LIMITS,
   EYE_STATES,
   FLIPPER_FRAMES,
@@ -676,6 +677,12 @@ export function createPet(options = {}) {
     }
 
     const rect = dom.scene.getBoundingClientRect();
+
+    if (!isPointerNearScene(event, rect)) {
+      resetFollowTargets();
+      return;
+    }
+
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     const normalizedX = clamp((event.clientX - centerX) / (rect.width * 0.45), -1, 1);
@@ -683,6 +690,17 @@ export function createPet(options = {}) {
 
     followState.targetEyeX = normalizedX * EYE_FOLLOW_LIMITS.x;
     followState.targetEyeY = normalizedY * EYE_FOLLOW_LIMITS.y;
+  }
+
+  function isPointerNearScene(event, rect) {
+    const padding = EYE_FOLLOW_ACTIVATION_PADDING;
+
+    return (
+      event.clientX >= rect.left - padding &&
+      event.clientX <= rect.right + padding &&
+      event.clientY >= rect.top - padding &&
+      event.clientY <= rect.bottom + padding
+    );
   }
 
   function resetFollowTargets() {
