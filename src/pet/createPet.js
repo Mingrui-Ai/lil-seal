@@ -179,6 +179,7 @@ function createDomRefs() {
     mouth: null,
     bubble: null,
     effect: null,
+    thoughtContent: null,
     effectBursts: null,
     zzz: null,
     pose: null,
@@ -359,6 +360,7 @@ export function createPet(options = {}) {
     dom.mouth = dom.root.querySelector('[data-part="mouth"]');
     dom.bubble = dom.root.querySelector('[data-part="bubble"]');
     dom.effect = dom.root.querySelector('[data-part="effect"]');
+    dom.thoughtContent = dom.root.querySelector('[data-part="thought-content"]');
     dom.effectBursts = dom.root.querySelector('[data-part="effect-bursts"]');
     dom.zzz = dom.root.querySelector('[data-part="zzz"]');
     dom.pose = dom.root.querySelector('[data-part="pose"]');
@@ -422,6 +424,7 @@ export function createPet(options = {}) {
     setImage(dom.effect, effectSrc, poseActive || !effectSrc);
     setImage(dom.pose, poseSrc, !poseActive);
     syncBurstEffect(petState.effect, burstEffectSrc, poseActive);
+    syncThoughtContent(petState.effect, effectSrc, poseActive);
 
     dom.zzz.hidden = poseActive || !sleeping || petState.sleepVisual !== "zzz";
     applyStandardLayerVisibility(poseActive);
@@ -433,6 +436,11 @@ export function createPet(options = {}) {
     dom.pet.classList.toggle("pet--talking", speechState.active);
     dom.pet.classList.toggle("pet--voice-pop", petState.voicePulseActive);
     dom.pet.classList.toggle("pet--wake-jolt", petState.wakeJoltActive);
+    if (petState.effect) {
+      dom.pet.dataset.effect = petState.effect;
+    } else {
+      delete dom.pet.dataset.effect;
+    }
     if (petState.sleepBubblePhase) {
       dom.pet.dataset.sleepBubblePhase = petState.sleepBubblePhase;
     } else {
@@ -462,6 +470,14 @@ export function createPet(options = {}) {
     dom.standardLayers.forEach((layer) => {
       layer.hidden = hidden;
     });
+  }
+
+  function syncThoughtContent(effectName, effectSrc, suppressed) {
+    if (!dom.thoughtContent) {
+      return;
+    }
+
+    dom.thoughtContent.hidden = suppressed || effectName !== "thinking" || !effectSrc;
   }
 
   function syncBurstEffect(effectName, src, suppressed) {

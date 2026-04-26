@@ -31,6 +31,27 @@ export function createPetMarkup(assets, labels) {
           </span>
           <img class="pet__layer pet__bubble" data-part="bubble" src="${assets.effects.chat}" alt="" hidden />
           <img class="pet__layer pet__effect" data-part="effect" src="${assets.effects.exclamation}" alt="" hidden />
+          <span class="pet__thought-content" data-part="thought-content" aria-hidden="true" hidden>
+            <span class="pet__thought-stage pet__thought-stage--dots">
+              <span class="pet__thought-dot"></span>
+              <span class="pet__thought-dot"></span>
+              <span class="pet__thought-dot"></span>
+            </span>
+            <span class="pet__thought-stage pet__thought-stage--question">?</span>
+            <span class="pet__thought-stage pet__thought-stage--gear">
+              <span class="pet__thought-gear"></span>
+            </span>
+            <span class="pet__thought-stage pet__thought-stage--fish">
+              <span class="pet__thought-fish"></span>
+            </span>
+            <span class="pet__thought-stage pet__thought-stage--code">
+              <span>&lt;</span><span>&gt;</span>
+            </span>
+            <span class="pet__thought-stage pet__thought-stage--study">
+              <span class="pet__thought-book"></span>
+              <span class="pet__thought-pencil"></span>
+            </span>
+          </span>
           <span class="pet__effect-bursts" data-part="effect-bursts" aria-hidden="true"></span>
           <img class="pet__layer pet__zzz" data-part="zzz" src="${assets.effects.zzz}" alt="" hidden />
           <img class="pet__layer pet__pose" data-part="pose" src="${assets.poses.wave1}" alt="" hidden />
