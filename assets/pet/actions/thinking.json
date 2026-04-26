@@ -1,6 +1,6 @@
 {
   "id": "thinking",
-  "finishDelay": 3300,
+  "finishDelay": 8300,
   "steps": [
     {
       "delay": 0,
@@ -17,20 +17,20 @@
       }
     },
     {
-      "delay": 640,
+      "delay": 900,
       "pose": {
         "eyes": { "left": "close", "right": "close" }
       }
     },
     {
-      "delay": 1120,
+      "delay": 1700,
       "pose": {
         "eyes": { "left": "low", "right": "low" },
         "headLift": true
       }
     },
     {
-      "delay": 2440,
+      "delay": 6700,
       "pose": {
         "eyes": { "left": "open", "right": "open" },
         "mouth": "speak1",
@@ -40,7 +40,7 @@
       }
     },
     {
-      "delay": 2840,
+      "delay": 7600,
       "pose": {
         "mouth": "normal",
         "flipperFrame": "frame1",

@@ -33,23 +33,36 @@ export function createPetMarkup(assets, labels) {
           <img class="pet__layer pet__effect" data-part="effect" src="${assets.effects.exclamation}" alt="" hidden />
           <span class="pet__thought-content" data-part="thought-content" aria-hidden="true" hidden>
             <span class="pet__thought-stage pet__thought-stage--dots">
-              <span class="pet__thought-dot"></span>
-              <span class="pet__thought-dot"></span>
-              <span class="pet__thought-dot"></span>
+              <span class="pet__thought-symbol pet__thought-symbol--dots">
+                <span class="pet__thought-dot"></span>
+                <span class="pet__thought-dot"></span>
+                <span class="pet__thought-dot"></span>
+              </span>
             </span>
-            <span class="pet__thought-stage pet__thought-stage--question">?</span>
+            <span class="pet__thought-stage pet__thought-stage--question">
+              <span class="pet__thought-symbol pet__thought-symbol--question">?</span>
+            </span>
             <span class="pet__thought-stage pet__thought-stage--gear">
-              <span class="pet__thought-gear"></span>
+              <span class="pet__thought-symbol pet__thought-symbol--gear">
+                <span class="pet__thought-gear"></span>
+              </span>
             </span>
             <span class="pet__thought-stage pet__thought-stage--fish">
-              <span class="pet__thought-fish"></span>
+              <img class="pet__layer pet__thought-asset" src="${assets.effects.fish}" alt="" />
+            </span>
+            <span class="pet__thought-stage pet__thought-stage--shrimp">
+              <img class="pet__layer pet__thought-asset" src="${assets.effects.shrimp}" alt="" />
             </span>
             <span class="pet__thought-stage pet__thought-stage--code">
-              <span>&lt;</span><span>&gt;</span>
+              <span class="pet__thought-symbol pet__thought-symbol--code">
+                <span>&lt;</span><span>&gt;</span>
+              </span>
             </span>
-            <span class="pet__thought-stage pet__thought-stage--study">
-              <span class="pet__thought-book"></span>
-              <span class="pet__thought-pencil"></span>
+            <span class="pet__thought-stage pet__thought-stage--book">
+              <img class="pet__layer pet__thought-asset" src="${assets.effects.book}" alt="" />
+            </span>
+            <span class="pet__thought-stage pet__thought-stage--pencil">
+              <img class="pet__layer pet__thought-asset" src="${assets.effects.pencil}" alt="" />
             </span>
           </span>
           <span class="pet__effect-bursts" data-part="effect-bursts" aria-hidden="true"></span>
