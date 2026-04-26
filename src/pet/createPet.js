@@ -26,6 +26,7 @@ const DEFAULT_LABELS = Object.freeze({
 });
 
 const DEFAULT_RANDOM_DELAY = Object.freeze({ min: 3200, max: 6800 });
+const SLEEP_ANIMATION_SETTLE_DURATION = 260;
 const WAKE_BLINK_DELAY = 560;
 const WAKE_BLINK_DURATION = 280;
 const SPEECH_PUNCTUATION = new Set([
@@ -1146,6 +1147,7 @@ export function createPet(options = {}) {
   }
 
   function beginDeepSleep() {
+    settleSleepAnimationSwitch();
     applyPose(actions.sleep?.sleepPose ?? createDefaultSleepPose());
     petState.sleepVisual = chooseSleepVisual();
     petState.bubble =
@@ -1170,6 +1172,41 @@ export function createPet(options = {}) {
     }
 
     scheduleSleepAutoWake();
+  }
+
+  function settleSleepAnimationSwitch() {
+    [dom.scene, dom.root?.querySelector(".pet__head-wrap")]
+      .filter(Boolean)
+      .forEach(settleAnimatedElement);
+  }
+
+  function settleAnimatedElement(element) {
+    const currentTransform = window.getComputedStyle(element).transform;
+
+    element.style.animation = "none";
+    element.style.transition = "none";
+    element.style.transform = currentTransform === "none" ? "" : currentTransform;
+    element.getBoundingClientRect();
+
+    window.requestAnimationFrame(() => {
+      if (!element.isConnected) {
+        return;
+      }
+
+      element.style.transition =
+        `transform ${SLEEP_ANIMATION_SETTLE_DURATION}ms cubic-bezier(0.22, 0.8, 0.24, 1)`;
+      element.style.transform = "";
+
+      window.setTimeout(() => {
+        if (!element.isConnected) {
+          return;
+        }
+
+        element.style.animation = "";
+        element.style.transition = "";
+        element.style.transform = "";
+      }, SLEEP_ANIMATION_SETTLE_DURATION + 40);
+    });
   }
 
   function scheduleSleepAutoWake() {
