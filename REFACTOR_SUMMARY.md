@@ -69,7 +69,7 @@ lil-seal/
         normal.png
         speak_01.png
         speak_02.png
-        speak_laugh.png
+        laugh.png
         tongue.png
       reference/
         all.png
@@ -121,12 +121,13 @@ lil-seal/
 {
   "id": "talk",
   "loop": true,
-  "finishDelay": 720,
+  "finishDelay": 640,
   "steps": [
-    { "delay": 0, "pose": { "mouth": "speak1", "bubble": "chat", "effect": "ellipsis" } },
-    { "delay": 120, "pose": { "mouth": "speak2" } },
-    { "delay": 160, "pose": { "mouth": "speak2", "effect": "questionMark" } },
-    { "delay": 320, "pose": { "mouth": "speak1", "effect": "exclamation" } }
+    { "delay": 0, "pose": { "mouth": "normal", "bubble": "chat", "effect": "ellipsis" } },
+    { "delay": 120, "pose": { "mouth": "speak1", "effect": "ellipsis" } },
+    { "delay": 260, "pose": { "mouth": "speak2", "effect": "ellipsis" } },
+    { "delay": 400, "pose": { "mouth": "speak1", "effect": "ellipsis" } },
+    { "delay": 520, "pose": { "mouth": "normal", "effect": "ellipsis" } }
   ]
 }
 ```
