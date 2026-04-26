@@ -140,7 +140,7 @@
   left: var(--love-x, 52%);
   display: block;
   width: var(--love-size, 70px);
-  aspect-ratio: 222 / 105;
+  aspect-ratio: var(--love-crop-ratio, 75 / 58);
   overflow: hidden;
   opacity: 0;
   transform: translate(-50%, -50%) scale(var(--love-start-scale, 0.5))
@@ -153,10 +153,10 @@
 
 .pet__love-particle-image {
   position: absolute;
-  top: -175.24%;
-  left: -85.14%;
+  top: var(--love-image-top, -450%);
+  left: var(--love-image-left, -289.33%);
   display: block;
-  width: 345.95%;
+  width: var(--love-image-width, 1024%);
   height: auto;
   max-width: none;
   user-select: none;

@@ -84,14 +84,24 @@ const SPEECH_PROFILES = Object.freeze({
   },
 });
 const BURST_EFFECTS = new Set(["love1"]);
+const LOVE_PARTICLE_SIZE_SCALE = 0.42;
+const LOVE_PARTICLE_CROP_FALLBACK = Object.freeze({
+  canvasWidth: 768,
+  canvasHeight: 768,
+  x: 217,
+  y: 261,
+  width: 75,
+  height: 58,
+});
 const LOVE_PARTICLE_BLUEPRINTS = Object.freeze([
-  { x: 46, y: 28, drift: -26, rise: -74, size: 76, delay: 0, scale: 0.92, rotateStart: -8, rotateEnd: -36 },
-  { x: 52, y: 24, drift: -8, rise: -92, size: 68, delay: 40, scale: 0.82, rotateStart: 10, rotateEnd: 28 },
-  { x: 59, y: 29, drift: 24, rise: -80, size: 74, delay: 70, scale: 0.9, rotateStart: 6, rotateEnd: 34 },
-  { x: 49, y: 35, drift: -36, rise: -58, size: 62, delay: 120, scale: 0.74, rotateStart: -18, rotateEnd: -44 },
-  { x: 56, y: 35, drift: 34, rise: -64, size: 64, delay: 150, scale: 0.78, rotateStart: 18, rotateEnd: 48 },
-  { x: 53, y: 30, drift: 6, rise: -70, size: 58, delay: 190, scale: 0.7, rotateStart: -4, rotateEnd: 18 },
+  { x: 41, y: 51, drift: -26, rise: -66, size: 76, delay: 0, scale: 0.92, rotateStart: -8, rotateEnd: -36 },
+  { x: 47, y: 47, drift: -8, rise: -78, size: 68, delay: 40, scale: 0.82, rotateStart: 10, rotateEnd: 28 },
+  { x: 54, y: 52, drift: 24, rise: -68, size: 74, delay: 70, scale: 0.9, rotateStart: 6, rotateEnd: 34 },
+  { x: 44, y: 56, drift: -36, rise: -50, size: 62, delay: 120, scale: 0.74, rotateStart: -18, rotateEnd: -44 },
+  { x: 51, y: 56, drift: 34, rise: -54, size: 64, delay: 150, scale: 0.78, rotateStart: 18, rotateEnd: 48 },
+  { x: 48, y: 53, drift: 6, rise: -58, size: 58, delay: 190, scale: 0.7, rotateStart: -4, rotateEnd: 18 },
 ]);
+const alphaBoundsCache = new Map();
 
 function createPetState() {
   return {
@@ -470,10 +480,16 @@ export function createPet(options = {}) {
     }
   }
 
-  function spawnLoveParticles(src) {
+  async function spawnLoveParticles(src) {
     const host = dom.effectBursts || dom.scene;
 
     if (!host || !src) {
+      return;
+    }
+
+    const crop = await getImageAlphaBounds(src);
+
+    if (!host.isConnected) {
       return;
     }
 
@@ -492,9 +508,25 @@ export function createPet(options = {}) {
       element.style.setProperty("--love-y", `${particle.y + randomBetween(-2, 2)}%`);
       element.style.setProperty("--love-drift", `${particle.drift + randomBetween(-8, 8)}px`);
       element.style.setProperty("--love-rise", `${particle.rise + randomBetween(-10, 6)}px`);
-      element.style.setProperty("--love-size", `${particle.size + randomBetween(-6, 5)}px`);
+      element.style.setProperty(
+        "--love-size",
+        `${((particle.size + randomBetween(-6, 5)) * LOVE_PARTICLE_SIZE_SCALE).toFixed(2)}px`
+      );
       element.style.setProperty("--love-duration", `${duration}ms`);
       element.style.setProperty("--love-delay", `${delay}ms`);
+      element.style.setProperty("--love-crop-ratio", `${crop.width} / ${crop.height}`);
+      element.style.setProperty(
+        "--love-image-width",
+        `${((crop.canvasWidth / crop.width) * 100).toFixed(2)}%`
+      );
+      element.style.setProperty(
+        "--love-image-left",
+        `${((-crop.x / crop.width) * 100).toFixed(2)}%`
+      );
+      element.style.setProperty(
+        "--love-image-top",
+        `${((-crop.y / crop.height) * 100).toFixed(2)}%`
+      );
       element.style.setProperty("--love-start-scale", Math.max(0.38, scale * 0.58).toFixed(2));
       element.style.setProperty("--love-end-scale", Math.max(0.54, scale * 0.98).toFixed(2));
       element.style.setProperty(
@@ -1456,6 +1488,78 @@ function resolveEffectName(effects, preferred, fallback) {
 
 function isBurstEffect(effectName) {
   return BURST_EFFECTS.has(effectName);
+}
+
+function getImageAlphaBounds(src) {
+  if (alphaBoundsCache.has(src)) {
+    return alphaBoundsCache.get(src);
+  }
+
+  const boundsPromise = measureImageAlphaBounds(src).catch(() => LOVE_PARTICLE_CROP_FALLBACK);
+  alphaBoundsCache.set(src, boundsPromise);
+  return boundsPromise;
+}
+
+async function measureImageAlphaBounds(src) {
+  const image = await loadImageElement(src);
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+
+  if (!width || !height) {
+    throw new Error(`Cannot measure transparent bounds: ${src}`);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+
+  if (!context) {
+    throw new Error("Cannot read love particle image pixels.");
+  }
+
+  context.drawImage(image, 0, 0);
+  const { data } = context.getImageData(0, 0, width, height);
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let index = 3; index < data.length; index += 4) {
+    if (data[index] === 0) {
+      continue;
+    }
+
+    const pixel = (index - 3) / 4;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  }
+
+  if (maxX < 0 || maxY < 0) {
+    throw new Error(`No visible pixels found: ${src}`);
+  }
+
+  return {
+    canvasWidth: width,
+    canvasHeight: height,
+    x: minX,
+    y: minY,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+  };
+}
+
+function loadImageElement(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Failed to measure asset: ${src}`));
+    image.src = src;
+  });
 }
 
 function getSpeechProfile(mode) {
