@@ -58,6 +58,7 @@
       "questionMark": "effects/question_mark.png",
       "thinking": "effects/thinking.png",
       "drop": "effects/drop.png",
+      "love1": "effects/love_1.png",
       "chat": "effects/chat.png",
       "cloud": "effects/cloud.png",
       "sleepBubble": "effects/bubble_1.png",
@@ -79,6 +80,7 @@
     "sleep": "actions/sleep.json",
     "wave": "actions/wave.json",
     "laugh": "actions/laugh.json",
+    "thinking": "actions/thinking.json",
     "talk": "actions/talk.json"
   }
 }

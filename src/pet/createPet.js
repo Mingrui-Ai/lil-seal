@@ -83,6 +83,15 @@ const SPEECH_PROFILES = Object.freeze({
     frames: [MOUTH_STATES.SPEAK2],
   },
 });
+const BURST_EFFECTS = new Set(["love1"]);
+const LOVE_PARTICLE_BLUEPRINTS = Object.freeze([
+  { x: 46, y: 28, drift: -26, rise: -74, size: 76, delay: 0, scale: 0.92, rotateStart: -8, rotateEnd: -36 },
+  { x: 52, y: 24, drift: -8, rise: -92, size: 68, delay: 40, scale: 0.82, rotateStart: 10, rotateEnd: 28 },
+  { x: 59, y: 29, drift: 24, rise: -80, size: 74, delay: 70, scale: 0.9, rotateStart: 6, rotateEnd: 34 },
+  { x: 49, y: 35, drift: -36, rise: -58, size: 62, delay: 120, scale: 0.74, rotateStart: -18, rotateEnd: -44 },
+  { x: 56, y: 35, drift: 34, rise: -64, size: 64, delay: 150, scale: 0.78, rotateStart: 18, rotateEnd: 48 },
+  { x: 53, y: 30, drift: 6, rise: -70, size: 58, delay: 190, scale: 0.7, rotateStart: -4, rotateEnd: 18 },
+]);
 
 function createPetState() {
   return {
@@ -159,6 +168,7 @@ function createDomRefs() {
     mouth: null,
     bubble: null,
     effect: null,
+    effectBursts: null,
     zzz: null,
     pose: null,
     standardLayers: [],
@@ -187,6 +197,7 @@ export function createPet(options = {}) {
   let assets = null;
   let actions = {};
   let activeLoopAction = null;
+  let lastBurstEffect = null;
   let speechState = createSpeechState();
   let readyPromise;
 
@@ -281,6 +292,7 @@ export function createPet(options = {}) {
     assets = null;
     actions = {};
     activeLoopAction = null;
+    lastBurstEffect = null;
     speechState = createSpeechState();
 
     dom.root = document.createElement("div");
@@ -336,6 +348,7 @@ export function createPet(options = {}) {
     dom.mouth = dom.root.querySelector('[data-part="mouth"]');
     dom.bubble = dom.root.querySelector('[data-part="bubble"]');
     dom.effect = dom.root.querySelector('[data-part="effect"]');
+    dom.effectBursts = dom.root.querySelector('[data-part="effect-bursts"]');
     dom.zzz = dom.root.querySelector('[data-part="zzz"]');
     dom.pose = dom.root.querySelector('[data-part="pose"]');
     dom.standardLayers = Array.from(dom.root.querySelectorAll('[data-layer="standard"]'));
@@ -378,7 +391,10 @@ export function createPet(options = {}) {
     const specialEyeSrc = petState.specialEyes
       ? assets.eyes.special?.[petState.specialEyes]
       : null;
-    const effectSrc = petState.effect ? assets.effects?.[petState.effect] : null;
+    const burstEffectActive = isBurstEffect(petState.effect);
+    const effectSrc =
+      petState.effect && !burstEffectActive ? assets.effects?.[petState.effect] : null;
+    const burstEffectSrc = burstEffectActive ? assets.effects?.[petState.effect] : null;
     const bubbleSrc = petState.bubble ? assets.effects?.[petState.bubble] : null;
     const poseSrc = petState.poseFrame ? assets.poses?.[petState.poseFrame] : null;
     const poseActive = Boolean(poseSrc);
@@ -394,6 +410,7 @@ export function createPet(options = {}) {
     setImage(dom.bubble, bubbleSrc, poseActive || !bubbleSrc);
     setImage(dom.effect, effectSrc, poseActive || !effectSrc);
     setImage(dom.pose, poseSrc, !poseActive);
+    syncBurstEffect(petState.effect, burstEffectSrc, poseActive);
 
     dom.zzz.hidden = poseActive || !sleeping || petState.sleepVisual !== "zzz";
     applyStandardLayerVisibility(poseActive);
@@ -434,6 +451,74 @@ export function createPet(options = {}) {
     dom.standardLayers.forEach((layer) => {
       layer.hidden = hidden;
     });
+  }
+
+  function syncBurstEffect(effectName, src, suppressed) {
+    if (suppressed || !effectName || !isBurstEffect(effectName) || !src) {
+      lastBurstEffect = null;
+      return;
+    }
+
+    if (lastBurstEffect === effectName) {
+      return;
+    }
+
+    lastBurstEffect = effectName;
+
+    if (effectName === "love1") {
+      spawnLoveParticles(src);
+    }
+  }
+
+  function spawnLoveParticles(src) {
+    const host = dom.effectBursts || dom.scene;
+
+    if (!host || !src) {
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    LOVE_PARTICLE_BLUEPRINTS.forEach((particle) => {
+      const element = document.createElement("span");
+      const image = document.createElement("img");
+      const duration = randomBetween(940, 1280);
+      const delay = particle.delay + randomBetween(0, 70);
+      const scale = particle.scale + randomBetween(-8, 8) / 100;
+
+      element.className = "pet__love-particle";
+      element.setAttribute("aria-hidden", "true");
+      element.style.setProperty("--love-x", `${particle.x + randomBetween(-2, 2)}%`);
+      element.style.setProperty("--love-y", `${particle.y + randomBetween(-2, 2)}%`);
+      element.style.setProperty("--love-drift", `${particle.drift + randomBetween(-8, 8)}px`);
+      element.style.setProperty("--love-rise", `${particle.rise + randomBetween(-10, 6)}px`);
+      element.style.setProperty("--love-size", `${particle.size + randomBetween(-6, 5)}px`);
+      element.style.setProperty("--love-duration", `${duration}ms`);
+      element.style.setProperty("--love-delay", `${delay}ms`);
+      element.style.setProperty("--love-start-scale", Math.max(0.38, scale * 0.58).toFixed(2));
+      element.style.setProperty("--love-end-scale", Math.max(0.54, scale * 0.98).toFixed(2));
+      element.style.setProperty(
+        "--love-rotate-start",
+        `${particle.rotateStart + randomBetween(-8, 8)}deg`
+      );
+      element.style.setProperty(
+        "--love-rotate-end",
+        `${particle.rotateEnd + randomBetween(-12, 12)}deg`
+      );
+
+      image.className = "pet__love-particle-image";
+      image.src = src;
+      image.alt = "";
+      image.decoding = "async";
+      image.draggable = false;
+
+      element.append(image);
+      element.addEventListener("animationend", () => element.remove(), { once: true });
+      window.setTimeout(() => element.remove(), duration + delay + 160);
+      fragment.append(element);
+    });
+
+    host.append(fragment);
   }
 
   function setIdlePose(eyes = { left: EYE_STATES.OPEN, right: EYE_STATES.OPEN }) {
@@ -1229,6 +1314,7 @@ export function createPet(options = {}) {
     assets = null;
     actions = {};
     activeLoopAction = null;
+    lastBurstEffect = null;
     speechState = createSpeechState();
   }
 }
@@ -1254,7 +1340,7 @@ function createDefaultSleepPose() {
     ...createDefaultSleepPendingPose(),
     mainState: MAIN_STATES.SLEEP,
     sleepPending: false,
-    eyes: { left: EYE_STATES.CLOSE, right: EYE_STATES.CLOSE },
+    eyes: { left: EYE_STATES.LOW, right: EYE_STATES.LOW },
     bubble: "sleepBubble",
   };
 }
@@ -1366,6 +1452,10 @@ function resolveEffectName(effects, preferred, fallback) {
   }
 
   return null;
+}
+
+function isBurstEffect(effectName) {
+  return BURST_EFFECTS.has(effectName);
 }
 
 function getSpeechProfile(mode) {

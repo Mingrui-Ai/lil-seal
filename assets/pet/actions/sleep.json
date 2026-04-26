@@ -32,7 +32,7 @@
   "sleepPose": {
     "mainState": "sleep",
     "sleepPending": false,
-    "eyes": { "left": "close", "right": "close" },
+    "eyes": { "left": "low", "right": "low" },
     "mouth": "normal",
     "flipperFrame": "frame1",
     "headLift": false,

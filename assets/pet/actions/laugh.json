@@ -11,14 +11,13 @@
         "headLift": true,
         "tailBoost": true,
         "cheeks": true,
-        "effect": "exclamation"
+        "effect": "love1"
       }
     },
     {
       "delay": 180,
       "pose": {
-        "flipperFrame": "frame1",
-        "effect": null
+        "flipperFrame": "frame1"
       }
     },
     {
@@ -42,7 +41,8 @@
         "eyes": { "left": "open", "right": "open" },
         "mouth": "normal",
         "cheeks": false,
-        "tailBoost": false
+        "tailBoost": false,
+        "effect": null
       }
     }
   ]

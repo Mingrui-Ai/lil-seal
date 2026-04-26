@@ -31,6 +31,7 @@ export function createPetMarkup(assets, labels) {
           </span>
           <img class="pet__layer pet__bubble" data-part="bubble" src="${assets.effects.chat}" alt="" hidden />
           <img class="pet__layer pet__effect" data-part="effect" src="${assets.effects.exclamation}" alt="" hidden />
+          <span class="pet__effect-bursts" data-part="effect-bursts" aria-hidden="true"></span>
           <img class="pet__layer pet__zzz" data-part="zzz" src="${assets.effects.zzz}" alt="" hidden />
           <img class="pet__layer pet__pose" data-part="pose" src="${assets.poses.wave1}" alt="" hidden />
         </span>
