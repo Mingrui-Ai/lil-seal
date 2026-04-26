@@ -7,8 +7,14 @@ import {
   HEAD_FOLLOW_LIMITS,
   MAIN_STATES,
   MOUTH_STATES,
+  SLEEP_AUTO_WAKE_DELAY,
+  SLEEP_BUBBLE_CHARGE_WINDOW,
+  SLEEP_BUBBLE_ENTER_DURATION,
+  SLEEP_BUBBLE_POP_FRAME_INTERVAL,
+  SLEEP_BUBBLE_POP_DURATION,
   SLEEP_CHECK_INTERVAL,
   SLEEP_DELAY,
+  SLEEP_RECOVERY_DELAY,
 } from "./constants.js";
 import { collectAssetPaths, loadPetCatalog } from "./assets.js";
 import { createPetMarkup } from "./template.js";
@@ -94,9 +100,12 @@ function createPetState() {
     specialEyes: null,
     cheeksVisible: false,
     bubble: null,
+    sleepBubblePhase: null,
+    sleepVisual: null,
     effect: null,
     poseFrame: null,
     voicePulseActive: false,
+    wakeJoltActive: false,
   };
 }
 
@@ -226,7 +235,7 @@ export function createPet(options = {}) {
     },
     wake() {
       resetInteractionClock();
-      wakeUp();
+      wakeFromSleep();
       return controller;
     },
     setPosition(nextPosition = {}) {
@@ -384,7 +393,7 @@ export function createPet(options = {}) {
     setImage(dom.effect, effectSrc, poseActive || !effectSrc);
     setImage(dom.pose, poseSrc, !poseActive);
 
-    dom.zzz.hidden = poseActive || !sleeping;
+    dom.zzz.hidden = poseActive || !sleeping || petState.sleepVisual !== "zzz";
     applyStandardLayerVisibility(poseActive);
     dom.pet.className = "pet";
     dom.pet.dataset.mainState = petState.mainState;
@@ -393,6 +402,12 @@ export function createPet(options = {}) {
     dom.pet.classList.toggle("pet--busy", petState.isBusy);
     dom.pet.classList.toggle("pet--talking", speechState.active);
     dom.pet.classList.toggle("pet--voice-pop", petState.voicePulseActive);
+    dom.pet.classList.toggle("pet--wake-jolt", petState.wakeJoltActive);
+    if (petState.sleepBubblePhase) {
+      dom.pet.dataset.sleepBubblePhase = petState.sleepBubblePhase;
+    } else {
+      delete dom.pet.dataset.sleepBubblePhase;
+    }
     dom.pet.setAttribute(
       "aria-label",
       sleeping ? settings.labels.sleep : settings.labels.idle
@@ -431,9 +446,12 @@ export function createPet(options = {}) {
     petState.specialEyes = null;
     petState.cheeksVisible = false;
     petState.bubble = null;
+    petState.sleepBubblePhase = null;
+    petState.sleepVisual = null;
     petState.effect = null;
     petState.poseFrame = null;
     petState.voicePulseActive = false;
+    petState.wakeJoltActive = false;
   }
 
   function applyPose(pose = {}) {
@@ -949,34 +967,145 @@ export function createPet(options = {}) {
 
     petState.isBusy = true;
     petState.sleepPending = true;
+    petState.sleepBubblePhase = null;
+    petState.sleepVisual = null;
+    petState.wakeJoltActive = false;
     applyPose(actions.sleep?.pendingPose ?? createDefaultSleepPendingPose());
     renderPet();
 
     scheduleAction(() => {
-      applyPose(actions.sleep?.sleepPose ?? createDefaultSleepPose());
-      petState.isBusy = false;
-      renderPet();
+      beginDeepSleep();
     }, normalizeDelay(actions.sleep?.transitionDelay, 1400));
 
     return true;
   }
 
-  function wakeUp() {
-    clearRandomTimer();
+  function beginDeepSleep() {
+    applyPose(actions.sleep?.sleepPose ?? createDefaultSleepPose());
+    petState.sleepVisual = chooseSleepVisual();
+    petState.bubble =
+      petState.sleepVisual === "bubble"
+        ? resolveEffectName(assets?.effects, petState.bubble, "sleepBubble")
+        : null;
+    petState.sleepBubblePhase =
+      petState.sleepVisual === "bubble" && petState.bubble ? "enter" : null;
+    petState.wakeJoltActive = false;
+    petState.isBusy = false;
+    renderPet();
+
+    if (petState.sleepVisual === "bubble") {
+      scheduleAction(() => {
+        if (petState.mainState !== MAIN_STATES.SLEEP || !petState.bubble) {
+          return;
+        }
+
+        petState.sleepBubblePhase = "breath";
+        renderPet();
+      }, normalizeDelay(actions.sleep?.bubbleEnterDuration, SLEEP_BUBBLE_ENTER_DURATION));
+    }
+
+    scheduleSleepAutoWake();
+  }
+
+  function scheduleSleepAutoWake() {
+    const delayRange = getDelayRange(actions.sleep?.autoWakeDelay, SLEEP_AUTO_WAKE_DELAY);
+    const delay = randomBetween(delayRange.min, delayRange.max);
+    const chargeWindow = normalizeDelay(
+      actions.sleep?.chargeWindow,
+      SLEEP_BUBBLE_CHARGE_WINDOW
+    );
+
+    if (petState.sleepVisual === "bubble" && chargeWindow > 0 && delay > chargeWindow) {
+      scheduleAction(startSleepBubbleCharge, delay - chargeWindow);
+    }
+
+    scheduleAction(wakeFromSleep, delay);
+  }
+
+  function startSleepBubbleCharge() {
+    if (petState.mainState !== MAIN_STATES.SLEEP || !petState.bubble) {
+      return;
+    }
+
+    petState.sleepBubblePhase = "charge";
+    renderPet();
+  }
+
+  function chooseSleepVisual() {
+    const canUseBubble = Boolean(assets?.effects?.sleepBubble);
+    const canUseZzz = Boolean(assets?.effects?.zzz && dom.zzz);
+
+    if (canUseBubble && canUseZzz) {
+      return Math.random() < 0.5 ? "bubble" : "zzz";
+    }
+
+    if (canUseBubble) {
+      return "bubble";
+    }
+
+    return canUseZzz ? "zzz" : null;
+  }
+
+  function getSleepBubblePopFrames() {
+    const configuredFrames = Array.isArray(actions.sleep?.popFrames)
+      ? actions.sleep.popFrames
+      : ["sleepBubble", "sleepBubblePop2", "sleepBubblePop3", "sleepBubblePop4"];
+
+    return configuredFrames
+      .map((frame) => resolveEffectName(assets?.effects, frame, null))
+      .filter(Boolean);
+  }
+
+  function wakeFromSleep() {
+    if (petState.mainState !== MAIN_STATES.SLEEP && !petState.sleepPending) {
+      return;
+    }
+
+    const shouldPopBubble = petState.sleepVisual === "bubble" && Boolean(petState.bubble);
+    const popFrames = shouldPopBubble ? getSleepBubblePopFrames() : [];
+    const popFrameInterval = normalizeDelay(
+      actions.sleep?.popFrameInterval,
+      SLEEP_BUBBLE_POP_FRAME_INTERVAL
+    );
+    const popDuration = normalizeDelay(
+      actions.sleep?.popDuration,
+      Math.max(SLEEP_BUBBLE_POP_DURATION, popFrameInterval * popFrames.length)
+    );
+
     clearActionTimers();
     activeLoopAction = null;
     speechState = createSpeechState();
 
+    applyPose(actions.sleep?.popPose ?? createDefaultSleepPopPose());
+    petState.bubble = popFrames[0] ?? null;
+    petState.sleepBubblePhase = shouldPopBubble && petState.bubble ? "pop" : null;
+    petState.sleepVisual = null;
+    petState.wakeJoltActive = true;
     petState.isBusy = true;
-    applyPose(actions.wake?.startPose ?? createDefaultWakeStartPose());
     renderPet();
 
+    popFrames.slice(1).forEach((frame, index) => {
+      scheduleAction(() => {
+        petState.bubble = frame;
+        renderPet();
+      }, popFrameInterval * (index + 1));
+    });
+
+    if (shouldPopBubble) {
+      scheduleAction(() => {
+        petState.bubble = null;
+        petState.sleepBubblePhase = null;
+        renderPet();
+      }, popDuration);
+    }
+
     scheduleAction(() => {
-      applyPose(actions.wake?.finishPose ?? createDefaultWakeFinishPose());
+      setIdlePose();
       petState.isBusy = false;
+      resetInteractionClock();
       renderPet();
       scheduleRandomAction();
-    }, normalizeDelay(actions.wake?.duration, 360));
+    }, normalizeDelay(actions.sleep?.recoveryDelay, SLEEP_RECOVERY_DELAY));
   }
 
   function handleClick() {
@@ -987,7 +1116,7 @@ export function createPet(options = {}) {
     }
 
     if (petState.mainState === MAIN_STATES.SLEEP || petState.sleepPending) {
-      wakeUp();
+      wakeFromSleep();
       return;
     }
 
@@ -1084,32 +1213,24 @@ function createDefaultSleepPose() {
     ...createDefaultSleepPendingPose(),
     mainState: MAIN_STATES.SLEEP,
     sleepPending: false,
+    eyes: { left: EYE_STATES.CLOSE, right: EYE_STATES.CLOSE },
+    bubble: "sleepBubble",
   };
 }
 
-function createDefaultWakeStartPose() {
+function createDefaultSleepPopPose() {
   return {
     mainState: MAIN_STATES.IDLE,
     sleepPending: false,
-    eyes: { left: EYE_STATES.LOW, right: EYE_STATES.LOW },
-    mouth: MOUTH_STATES.NORMAL,
+    eyes: { left: EYE_STATES.OPEN, right: EYE_STATES.OPEN },
+    mouth: MOUTH_STATES.SPEAK2,
     flipperFrame: FLIPPER_FRAMES.FRAME2,
     headLift: true,
     tailBoost: true,
-    bubble: null,
+    specialEyes: null,
+    cheeks: false,
+    bubble: "sleepBubble",
     effect: "exclamation",
-    poseFrame: null,
-  };
-}
-
-function createDefaultWakeFinishPose() {
-  return {
-    eyes: { left: EYE_STATES.OPEN, right: EYE_STATES.OPEN },
-    flipperFrame: FLIPPER_FRAMES.FRAME1,
-    headLift: false,
-    tailBoost: false,
-    bubble: null,
-    effect: null,
     poseFrame: null,
   };
 }
@@ -1176,11 +1297,34 @@ function normalizeDelay(value, fallback = 0) {
   return normalizeNumber(value, fallback);
 }
 
-function getDelayRange(range = DEFAULT_RANDOM_DELAY) {
+function getDelayRange(range, fallback = DEFAULT_RANDOM_DELAY) {
+  const source = range ?? fallback;
+  const min = normalizeNumber(source.min, fallback.min);
+  const max = normalizeNumber(source.max, fallback.max);
+
+  if (max < min) {
+    return {
+      min: max,
+      max: min,
+    };
+  }
+
   return {
-    min: normalizeNumber(range.min, DEFAULT_RANDOM_DELAY.min),
-    max: normalizeNumber(range.max, DEFAULT_RANDOM_DELAY.max),
+    min,
+    max,
   };
+}
+
+function resolveEffectName(effects, preferred, fallback) {
+  if (preferred && effects?.[preferred]) {
+    return preferred;
+  }
+
+  if (fallback && effects?.[fallback]) {
+    return fallback;
+  }
+
+  return null;
 }
 
 function getSpeechProfile(mode) {

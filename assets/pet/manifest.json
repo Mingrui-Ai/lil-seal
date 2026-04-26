@@ -59,7 +59,11 @@
       "thinking": "effects/thinking.png",
       "drop": "effects/drop.png",
       "chat": "effects/chat.png",
-      "cloud": "effects/cloud.png"
+      "cloud": "effects/cloud.png",
+      "sleepBubble": "effects/bubble_1.png",
+      "sleepBubblePop2": "effects/bubble_2.png",
+      "sleepBubblePop3": "effects/bubble_3.png",
+      "sleepBubblePop4": "effects/bubble_4.png"
     },
     "poses": {
       "wave1": "poses/wave_01.png",
@@ -73,7 +77,6 @@
     "randomIdle": "actions/random_idle.json",
     "click": "actions/click.json",
     "sleep": "actions/sleep.json",
-    "wake": "actions/wake.json",
     "wave": "actions/wave.json",
     "laugh": "actions/laugh.json",
     "talk": "actions/talk.json"

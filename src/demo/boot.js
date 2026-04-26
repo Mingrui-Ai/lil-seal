@@ -10,7 +10,6 @@ const ACTION_LABELS = {
 
 const COMMAND_LABELS = {
   sleep: "睡觉",
-  wake: "醒来",
 };
 
 function startDemo() {

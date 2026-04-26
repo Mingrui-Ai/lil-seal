@@ -1,6 +1,21 @@
 {
   "id": "sleep",
   "transitionDelay": 1400,
+  "bubbleEnterDuration": 720,
+  "autoWakeDelay": {
+    "min": 8000,
+    "max": 20000
+  },
+  "chargeWindow": 2000,
+  "popFrameInterval": 80,
+  "popFrames": [
+    "sleepBubble",
+    "sleepBubblePop2",
+    "sleepBubblePop3",
+    "sleepBubblePop4"
+  ],
+  "popDuration": 440,
+  "recoveryDelay": 1500,
   "pendingPose": {
     "sleepPending": true,
     "eyes": { "left": "low", "right": "low" },
@@ -17,15 +32,29 @@
   "sleepPose": {
     "mainState": "sleep",
     "sleepPending": false,
-    "eyes": { "left": "low", "right": "low" },
+    "eyes": { "left": "close", "right": "close" },
     "mouth": "normal",
     "flipperFrame": "frame1",
     "headLift": false,
     "tailBoost": false,
     "specialEyes": null,
     "cheeks": false,
-    "bubble": null,
+    "bubble": "sleepBubble",
     "effect": null,
+    "poseFrame": null
+  },
+  "popPose": {
+    "mainState": "idle",
+    "sleepPending": false,
+    "eyes": { "left": "open", "right": "open" },
+    "mouth": "speak2",
+    "flipperFrame": "frame2",
+    "headLift": true,
+    "tailBoost": true,
+    "specialEyes": null,
+    "cheeks": false,
+    "bubble": "sleepBubble",
+    "effect": "exclamation",
     "poseFrame": null
   }
 }
