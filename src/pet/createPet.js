@@ -25,6 +25,8 @@ const DEFAULT_LABELS = Object.freeze({
 });
 
 const DEFAULT_RANDOM_DELAY = Object.freeze({ min: 3200, max: 6800 });
+const WAKE_BLINK_DELAY = 560;
+const WAKE_BLINK_DURATION = 280;
 const SPEECH_PUNCTUATION = new Set([
   ",",
   ".",
@@ -1111,6 +1113,8 @@ export function createPet(options = {}) {
       }, popDuration);
     }
 
+    scheduleWakeBlink();
+
     scheduleAction(() => {
       setIdlePose();
       petState.isBusy = false;
@@ -1118,6 +1122,31 @@ export function createPet(options = {}) {
       renderPet();
       scheduleRandomAction();
     }, normalizeDelay(actions.sleep?.recoveryDelay, SLEEP_RECOVERY_DELAY));
+  }
+
+  function scheduleWakeBlink() {
+    scheduleAction(() => {
+      if (!petState.isBusy || !petState.wakeJoltActive) {
+        return;
+      }
+
+      petState.eyes.left = EYE_STATES.CLOSE;
+      petState.eyes.right = EYE_STATES.CLOSE;
+      renderPet();
+    }, normalizeDelay(actions.sleep?.wakeBlinkDelay, WAKE_BLINK_DELAY));
+
+    scheduleAction(() => {
+      if (!petState.isBusy || !petState.wakeJoltActive) {
+        return;
+      }
+
+      petState.eyes.left = EYE_STATES.OPEN;
+      petState.eyes.right = EYE_STATES.OPEN;
+      renderPet();
+    }, normalizeDelay(
+      actions.sleep?.wakeBlinkDelay,
+      WAKE_BLINK_DELAY
+    ) + normalizeDelay(actions.sleep?.wakeBlinkDuration, WAKE_BLINK_DURATION));
   }
 
   function handleClick() {

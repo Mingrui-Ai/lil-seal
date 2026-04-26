@@ -31,8 +31,10 @@
   min-height: 100vh;
   padding: clamp(28px, 5vw, 56px);
   display: grid;
-  gap: 18px;
+  grid-template-columns: minmax(280px, 1fr) minmax(360px, 520px);
+  gap: clamp(18px, 4vw, 44px);
   align-content: start;
+  align-items: start;
 }
 
 .demo-panel,
@@ -65,6 +67,12 @@
 
 .demo-controls {
   padding: clamp(20px, 3vw, 28px);
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-self: end;
+  position: sticky;
+  top: clamp(20px, 4vw, 44px);
+  z-index: 50;
 }
 
 .demo-controls h2 {
@@ -91,10 +99,16 @@
 
 .demo-speech {
   display: grid;
-  grid-template-columns: minmax(120px, 0.4fr) minmax(180px, 1fr) minmax(112px, auto);
+  grid-template-columns: minmax(112px, 0.44fr) minmax(0, 1fr);
   gap: 10px;
   margin-top: 14px;
   align-items: end;
+}
+
+.demo-speech > .demo-action {
+  grid-column: 1 / -1;
+  justify-self: end;
+  width: min(100%, 144px);
 }
 
 .demo-field {
@@ -181,12 +195,25 @@
 
 @media (max-width: 700px) {
   .demo-main {
+    grid-template-columns: 1fr;
     padding-bottom: 220px;
   }
 
-  .demo-panel,
-  .demo-controls {
+  .demo-panel {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: stretch;
+    position: static;
     width: 100%;
+  }
+
+  .demo-controls {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: end;
+    position: relative;
+    z-index: 50;
+    width: min(100%, 420px);
   }
 
   .demo-speech {
