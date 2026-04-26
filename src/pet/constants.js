@@ -14,7 +14,7 @@ export const MOUTH_STATES = {
   TONGUE: "tongue",
   SPEAK1: "speak1",
   SPEAK2: "speak2",
-  SPEAK3: "speak3",
+  LAUGH: "laugh",
 };
 
 export const FLIPPER_FRAMES = {

@@ -61,6 +61,7 @@
   pointer-events: none;
 }
 
+.pet [hidden],
 .pet__layer[hidden] {
   display: none !important;
 }

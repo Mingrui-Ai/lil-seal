@@ -69,7 +69,7 @@ lil-seal/
         normal.png
         speak_01.png
         speak_02.png
-        speak_03.png
+        speak_laugh.png
         tongue.png
       reference/
         all.png
@@ -125,7 +125,8 @@ lil-seal/
   "steps": [
     { "delay": 0, "pose": { "mouth": "speak1", "bubble": "chat", "effect": "ellipsis" } },
     { "delay": 120, "pose": { "mouth": "speak2" } },
-    { "delay": 240, "pose": { "mouth": "speak3", "effect": "questionMark" } }
+    { "delay": 160, "pose": { "mouth": "speak2", "effect": "questionMark" } },
+    { "delay": 320, "pose": { "mouth": "speak1", "effect": "exclamation" } }
   ]
 }
 ```
@@ -135,7 +136,7 @@ lil-seal/
 - `mainState`：`idle` 或 `sleep`。
 - `sleepPending`：睡眠过渡状态。
 - `eyes.left/right`：`open`、`low`、`close`。
-- `mouth`：`normal`、`tongue`、`speak1`、`speak2`、`speak3`。
+- `mouth`：`normal`、`tongue`、`speak1`、`speak2`、`laugh`。
 - `flipperFrame`：`frame1`、`frame2`。
 - `headLift`：是否触发抬头样式。
 - `tailBoost`：是否触发尾巴摆动样式。

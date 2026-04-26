@@ -292,10 +292,6 @@ export function createPet(options = {}) {
     const poseSrc = petState.poseFrame ? assets.poses?.[petState.poseFrame] : null;
     const poseActive = Boolean(poseSrc);
 
-    dom.standardLayers.forEach((layer) => {
-      layer.hidden = poseActive;
-    });
-
     setImage(dom.eyeLeft, assets.eyes.left[petState.eyes.left], Boolean(specialEyeSrc));
     setImage(dom.eyeRight, assets.eyes.right[petState.eyes.right], Boolean(specialEyeSrc));
     setImage(dom.specialEyes, specialEyeSrc, !specialEyeSrc);
@@ -309,6 +305,7 @@ export function createPet(options = {}) {
     setImage(dom.pose, poseSrc, !poseActive);
 
     dom.zzz.hidden = poseActive || !sleeping;
+    applyStandardLayerVisibility(poseActive);
     dom.pet.className = "pet";
     dom.pet.dataset.mainState = petState.mainState;
     dom.pet.classList.toggle("pet--head-lift", petState.headLiftActive);
@@ -332,6 +329,12 @@ export function createPet(options = {}) {
     }
 
     element.hidden = hidden;
+  }
+
+  function applyStandardLayerVisibility(hidden) {
+    dom.standardLayers.forEach((layer) => {
+      layer.hidden = hidden;
+    });
   }
 
   function setIdlePose(eyes = { left: EYE_STATES.OPEN, right: EYE_STATES.OPEN }) {
